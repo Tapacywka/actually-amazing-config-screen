@@ -1,0 +1,29 @@
+# Only the library itself is versioned: sources, Gradle build files (buildSrc too), licence, readme and changelog.
+# Everything else in this folder (tools, local test files) stays local.
+/*
+!/.gitignore
+!/build.gradle
+!/settings.gradle
+!/gradle.properties
+!/gradlew
+!/gradlew.bat
+!/gradle/
+!/buildSrc/
+!/common/
+!/fabric/
+!/neoforge/
+!/LICENSE
+!/README.md
+!/CHANGELOG.md
+
+# The development games of each loader's build (run/ at the top stays ignored by the first rule).
+/fabric/run*/
+/neoforge/run*/
+
+# Build output and IDE files, wherever they appear.
+.gradle/
+build/
+out/
+logs/
+*.iml
+.idea/

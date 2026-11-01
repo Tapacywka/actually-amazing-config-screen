@@ -1,0 +1,41 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.fabricmc.fabric-loom-remap'
+}
+
+// Local development runs, when present; not in the public repository.
+if (rootProject.file('devtest-fabric.gradle').exists()) apply from: rootProject.file('devtest-fabric.gradle')
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    mappings loom.layered {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-${parchment_minecraft_version}:${parchment_mappings_version}@zip")
+    }
+    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+}
+
+processResources {
+    def props = [
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : project.version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description,
+            minecraft_version_range: fabric_minecraft_range,
+    ]
+    inputs.properties props
+    filesMatching('fabric.mod.json') { expand props }
+}
+
+// The released file is the remapped one, named like the plain JAR (multiloader-common).
+tasks.named('remapJar') {
+    archiveVersion = "v${project.version}"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    // Full debug information, as in Teyvat Cartographia: Sinytra Connector's mixin adapter needs the local variable
+    // tables when the Fabric JAR runs on NeoForge.
+    options.debugOptions.debugLevel = 'source,lines,vars'
+}
