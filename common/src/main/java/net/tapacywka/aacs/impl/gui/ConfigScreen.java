@@ -77,6 +77,7 @@ public final class ConfigScreen extends Screen {
                     case CHOICE -> new ChoiceRow<>(r.key(), cast(r.options()), cast(r.get()), cast(r.set()));
                 };
                 row.value = r.value();
+                row.preview = r.preview();
                 if (row instanceof Section) owner = null;
                 else if (row instanceof SubSection s) owner = s;
                 else row.owner = owner;
@@ -122,6 +123,13 @@ public final class ConfigScreen extends Screen {
 
         /** The setting behind the row (its reset icon), or null. */
         Value<?> value;
+        /** The mod's picture of the setting on the card, or null. */
+        AacsScreen.Preview preview;
+
+        /** The value as the row shows it ("On", "40%", "Top left"), for the card's caption; null for headings. */
+        String valueText() {
+            return null;
+        }
 
         void renderLabel(GuiGraphics g, float x, float w) {
             // Short of the middle by the reset icon too, so the label never jumps when the icon shows.
@@ -315,6 +323,11 @@ public final class ConfigScreen extends Screen {
             return tx(x, w);
         }
 
+        @Override
+        String valueText() {
+            return (get.get() ? CommonComponents.OPTION_ON : CommonComponents.OPTION_OFF).getString();
+        }
+
         private float ty() {
             return y + (Grid.ROW - Grid.TOGGLE_H) / 2f;
         }
@@ -442,6 +455,11 @@ public final class ConfigScreen extends Screen {
         void release() {
             if (s.onRelease != null) s.onRelease.run();
         }
+
+        @Override
+        String valueText() {
+            return text(get.get());
+        }
     }
 
     /** A choice button with arrows at both ends: a click on its left or right half steps back or forward. */
@@ -460,6 +478,11 @@ public final class ConfigScreen extends Screen {
 
         float by() {
             return y + (Grid.ROW - H) / 2f;
+        }
+
+        @Override
+        String valueText() {
+            return c.names.apply(get.get()).getString();
         }
 
         /** It does something: active now, and more than one option to step through. */
@@ -500,9 +523,20 @@ public final class ConfigScreen extends Screen {
 
     // ------------------------------------------------------------------ layout
 
+    /** The card beside the panel: shown with at least this much room, at most this wide (GUI units). */
+    private static final int CARD_MIN = 200, CARD_MAX = 300;
+    private boolean card;
+    private float cardX, cardW;
+    /** The row the card (or the tooltip) tells of: the one under the pointer, kept while the pointer goes right. */
+    private Row pointed;
+
     private void layout() {
         panelW = Math.min(PANEL_MAX, (width - 2 * 2 * Grid.MARGIN) / Grid.STEP * Grid.STEP);
-        panelX = Math.round((width - panelW) / 2f);
+        float rest = width - 2 * Grid.MARGIN - panelW - Grid.MARGIN;
+        card = rest >= CARD_MIN;
+        cardW = card ? Math.min(CARD_MAX, rest) : 0;
+        panelX = Math.round((width - panelW - (card ? Grid.MARGIN + cardW : 0)) / 2f);
+        cardX = panelX + panelW + Grid.MARGIN;
         panelY = Grid.MARGIN;
         panelH = height - 2 * Grid.MARGIN;
         listTop = tabs.size() > 1 ? tabY() + TAB_H + Grid.GAP : panelY + Grid.HEADER_H + Grid.GAP;
@@ -625,6 +659,68 @@ public final class ConfigScreen extends Screen {
         DrawText.textCentered(g, t, x + w / 2f, DrawText.textY(y, TAB_H), shown ? Theme.GOLD : Theme.CREAM, false);
     }
 
+    // ------------------------------------------------------------------ the card beside the list
+
+    /** The row under the pointer; kept while the pointer is right of the list (its bar, the gap, the card). */
+    private void followPointer(int mx, int my) {
+        boolean overList = my >= listTop && my < listBottom && mx >= contentX() && mx < contentX() + contentW()
+                && (openList == null || !openList.over(mx, my));
+        if (overList) {
+            pointed = null;
+            for (Row r : rows) {
+                if (r.tooltip != null && inView(r) && my >= r.y && my < r.y + r.height()) pointed = r;
+            }
+        } else if (!(mx >= contentX() + contentW() && my >= panelY && my < panelY + panelH)) {
+            pointed = null;
+        }
+    }
+
+    /** Where the pictures start under the name and description: below the longest description of the screen. */
+    private float descriptionRoom;
+    private String roomKey;
+
+    private float descriptionRoom(float textW) {
+        String key = Minecraft.getInstance().getLanguageManager().getSelected() + "/" + (int) textW;
+        if (!key.equals(roomKey)) {
+            roomKey = key;
+            int most = 0;
+            for (List<Row> tab : tabs) {
+                for (Row r : tab) if (r.tooltip != null) most = Math.max(most, font.split(r.tooltip, (int) textW).size());
+            }
+            descriptionRoom = Grid.ROW + most * DrawText.LINE + Grid.PAD;
+        }
+        return descriptionRoom;
+    }
+
+    private void renderCard(GuiGraphics g, int mx, int my, float pt) {
+        float x = cardX, y = panelY, w = cardW, h = panelH;
+        Draw.rect(g, x, y, x + w, y + h, Theme.PANEL_DARK);
+        float tx = x + 2 * Grid.PAD, tw = w - 4 * Grid.PAD, ty = y + 2 * Grid.PAD;
+        if (pointed == null) {
+            Component none = Component.translatable("aacs.preview.none");
+            DrawText.textCentered(g, Component.literal(DrawText.fit(none.getString(), (int) tw)), x + w / 2, y + h / 2 - 4, Theme.TEXT_MUTED, false);
+            return;
+        }
+        DrawText.text(g, DrawText.fit(pointed.label.getString(), (int) tw), tx, ty, Theme.GOLD, false);
+        float ly = ty + Grid.ROW;
+        for (var line : font.split(pointed.tooltip, (int) tw)) {
+            g.drawString(font, line, Math.round(tx), Math.round(ly), Theme.CREAM, false);
+            ly += DrawText.LINE;
+        }
+        String value = pointed.valueText();
+        float picTop = ty + descriptionRoom(tw), captionH = value != null ? Grid.ROW : 0;
+        float picH = y + h - 2 * Grid.PAD - captionH - picTop;
+        if (pointed.preview != null && picH > Grid.ROW) {
+            g.enableScissor((int) tx, (int) picTop, (int) (tx + tw), (int) (picTop + picH));
+            pointed.preview.draw(g, tx, picTop, tw, picH, pt);
+            g.disableScissor();
+        }
+        if (value != null) {
+            Component caption = Component.literal(DrawText.fit(pointed.label.getString() + ": " + value, (int) tw));
+            DrawText.textCentered(g, caption, x + w / 2, DrawText.textY(y + h - 2 * Grid.PAD - Grid.ROW, Grid.ROW), Theme.TEXT_MUTED, false);
+        }
+    }
+
     // ------------------------------------------------------------------ drawing
 
     @Override
@@ -657,7 +753,10 @@ public final class ConfigScreen extends Screen {
             blurTheme = Theme.generation();
         }
         Draw.rect(g, 0, 0, width, height, Theme.SETTINGS_DIM);
+        // The card's picture is prepared before anything is clipped (it may draw into a layer of its own).
+        if (card && pointed != null && pointed.preview != null) pointed.preview.prepare(cardW - 4 * Grid.PAD, panelH, pt);
         Ui.panel(g, panelX, panelY, panelW, panelH, title, titleIcon, mx, my);
+        if (card) Backdrop.draw(g, cardX, panelY, cardX + cardW, panelY + panelH);
         Backdrop.release();
         if (tabs.size() > 1) for (int i = 0; i < tabs.size(); i++) renderTab(g, i, mx, my);
         float total = total();
@@ -693,6 +792,8 @@ public final class ConfigScreen extends Screen {
             }
         }
         renderBar(g, total, mx, my);
+        followPointer(mx, my);
+        if (card) renderCard(g, mx, my, pt);
 
         float bw = footerButtonW(), by = footerY();
         for (int i = 0; i < spec.buttons.size(); i++) {
@@ -702,6 +803,10 @@ public final class ConfigScreen extends Screen {
         Ui.actionButton(g, footerButtonX(n), by, bw, Component.translatable("aacs.reset"), Icon.RESET, true, mx, my);
         Ui.actionButton(g, footerButtonX(n + 1), by, bw, CommonComponents.GUI_DONE, Icon.CHECK, true, mx, my);
 
+        // Without room for the card, the description of the row under the pointer as a tooltip, over everything.
+        if (!card && pointed != null && draggingRow == null && my >= pointed.y && my < pointed.y + pointed.height()) {
+            g.renderTooltip(font, font.split(pointed.tooltip, Math.max(120, (int) (panelW / 2))), mx, my);
+        }
         if (draggingRow != null) Cursors.force(Cursors.Shape.RESIZE_H);
         if (draggingBar) Cursors.force(Cursors.Shape.RESIZE_V);
         Cursors.apply();

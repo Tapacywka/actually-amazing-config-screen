@@ -58,6 +58,16 @@ public final class TestScreen {
                 .tab(k + "tab.display", t -> {
                     t.section(k + "section.look").toggle(GRID).toggle(LABELS)
                             .slider(OPACITY, s -> s.unit("%"))
+                            .preview((g, x, y, w, h, pt) -> {
+                                // A gold square as opaque as the setting, over a checked ground.
+                                float side = Math.min(w, h) * 0.6f, sx = x + (w - side) / 2, sy = y + (h - side) / 2;
+                                for (int i = 0; i < 8; i++) for (int j = 0; j < 8; j++) {
+                                    int c = (i + j) % 2 == 0 ? 0xFF555555 : 0xFF888888;
+                                    g.fill((int) (sx + i * side / 8), (int) (sy + j * side / 8), (int) (sx + (i + 1) * side / 8), (int) (sy + (j + 1) * side / 8), c);
+                                }
+                                int a = Math.round(OPACITY.get() * 2.55f);
+                                g.fill((int) sx, (int) sy, (int) (sx + side), (int) (sy + side), a << 24 | 0xD3BC8E);
+                            })
                             .slider(ZOOM, s -> s.steps(0.25, 0.5, 1, 2, 4))
                             .choice(CORNER)
                             .steps(k + "look.show", new String[]{k + "step.off", k + "step.map", k + "step.both"},
@@ -112,7 +122,7 @@ public final class TestScreen {
             case 4 -> {
                 // The list of the Flowers row (the eighth) opened by its arrow.
                 int[] p = at(mc, 8);
-                mc.screen.mouseClicked(mc.screen.width / 2 + 125, p[1], 0);
+                mc.screen.mouseClicked(contentRight(mc.screen.width) - 28 - 8 - 3, p[1], 0); // the arrow left of the switch
             }
             case 5 -> shot(mc, prefix + "_list");
             default -> {
@@ -125,7 +135,15 @@ public final class TestScreen {
     /** The middle of row {@code n} (1 first; the section is row 1) in GUI units, the pointer over the controls. */
     private static int[] at(Minecraft mc, int n) {
         var s = mc.screen;
-        return new int[]{s.width / 2 + 100, 8 + 28 + 4 + 20 + 4 + 24 + (n - 2) * 20 + 10};
+        return new int[]{(int) contentRight(s.width) - 60, 8 + 28 + 4 + 20 + 4 + 24 + (n - 2) * 20 + 10};
+    }
+
+    /** The right edge of the rows, as the screen lays out its panel and the card beside it. */
+    private static float contentRight(int width) {
+        float panelW = Math.min(360, (width - 32) / 4 * 4), rest = width - 16 - panelW - 8;
+        float cardW = rest >= 200 ? Math.min(300, rest) : 0;
+        float panelX = Math.round((width - panelW - (cardW > 0 ? 8 + cardW : 0)) / 2f);
+        return panelX + panelW - 16;
     }
 
     private static void click(Minecraft mc, int n) {

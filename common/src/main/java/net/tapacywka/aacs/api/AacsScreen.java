@@ -150,20 +150,20 @@ public final class AacsScreen {
         /** A heading; it also ends the sub-section before it. */
         public Tab section(String key) {
             subSection = null;
-            rows.add(new Row(Row.Kind.SECTION, key, null, null, null, null, null, null));
+            rows.add(new Row(Row.Kind.SECTION, key, null, null, null, null, null, null, null));
             return this;
         }
 
         /** A sub-heading that folds: the rows after it, up to the next heading, belong to it. */
         public Tab subSection(String key) {
-            rows.add(new Row(Row.Kind.SUB_SECTION, key, null, null, null, null, null, null));
+            rows.add(new Row(Row.Kind.SUB_SECTION, key, null, null, null, null, null, null, null));
             subSection = key;
             return this;
         }
 
         /** A sub-heading with its own text (a mod's name); {@code key} still keeps it open or folded. */
         public Tab subSection(String key, Component label) {
-            rows.add(new Row(Row.Kind.SUB_SECTION, key, null, null, null, label, null, null));
+            rows.add(new Row(Row.Kind.SUB_SECTION, key, null, null, null, label, null, null, null));
             subSection = key;
             return this;
         }
@@ -173,7 +173,14 @@ public final class AacsScreen {
         }
 
         private Tab add(Row.Kind kind, String key, Supplier<?> get, Consumer<?> set, Value<?> value, Object options) {
-            rows.add(new Row(kind, key, subSection, get, set, null, value, options));
+            rows.add(new Row(kind, key, subSection, get, set, null, value, options, null));
+            return this;
+        }
+
+        /** The picture of the last row on the card beside the list. */
+        public Tab preview(Preview preview) {
+            Row r = rows.remove(rows.size() - 1);
+            rows.add(new Row(r.kind(), r.key(), r.subSection(), r.get(), r.set(), r.label(), r.value(), r.options(), preview));
             return this;
         }
 
@@ -273,6 +280,16 @@ public final class AacsScreen {
         }
     }
 
+    /**
+     * The picture of a setting on the card beside the list (while the screen has room for the card): the mod draws it
+     * in the area given. {@link #prepare} runs before anything is clipped (a picture drawn into a layer of its own).
+     */
+    public interface Preview {
+        default void prepare(float w, float h, float partialTick) {}
+
+        void draw(GuiGraphics g, float x, float y, float w, float h, float partialTick);
+    }
+
     /** One entry of a {@link Tab#toggleList}: its id (as kept in the list of those off), name and colour (0: none). */
     public record ListEntry(String id, Component name, int colour) {}
 
@@ -355,7 +372,7 @@ public final class AacsScreen {
      * for rows over the mod's own getter and setter; {@code options} a {@link Slider} or a {@link Choice}.
      */
     public record Row(Kind kind, String key, String subSection, Supplier<?> get, Consumer<?> set, Component label,
-                      Value<?> value, Object options) {
+                      Value<?> value, Object options, Preview preview) {
         public enum Kind { SECTION, SUB_SECTION, TOGGLE, TOGGLE_LIST, SLIDER, CHOICE }
     }
 }
