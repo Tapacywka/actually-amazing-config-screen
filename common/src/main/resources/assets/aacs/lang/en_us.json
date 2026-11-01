@@ -1,3 +1,6 @@
 {
-  "aacs.reset": "Reset"
+  "aacs.reset": "Reset",
+  "aacs.list.find": "Find",
+  "aacs.list.count": "On: %s of %s",
+  "aacs.list.none": "Nothing by that name"
 }

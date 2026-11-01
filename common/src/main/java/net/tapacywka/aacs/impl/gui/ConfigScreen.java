@@ -53,6 +53,7 @@ public final class ConfigScreen extends Screen {
     private final SmoothScroll scroller = new SmoothScroll();
     private float scroll;
     private boolean draggingBar;
+    private Row draggingRow;
     private float barGrab;
     private float panelX, panelY, panelW, panelH, listTop, listBottom;
     private int blurW = -1, blurH = -1, blurTheme = -1, blurFrames;
@@ -71,7 +72,11 @@ public final class ConfigScreen extends Screen {
                     case SECTION -> new Section(r.key());
                     case SUB_SECTION -> new SubSection(spec.modId + "/" + r.key(), r.label() != null ? r.label() : Component.translatable(r.key()));
                     case TOGGLE -> new Toggle(r.key(), cast(r.get()), cast(r.set()));
+                    case TOGGLE_LIST -> new ListRow(r.key(), cast(r.get()), cast(r.set()), cast(r.options()));
+                    case SLIDER -> new SliderRow(r.key(), cast(r.options()), cast(r.get()), cast(r.set()));
+                    case CHOICE -> new ChoiceRow<>(r.key(), cast(r.options()), cast(r.get()), cast(r.set()));
                 };
+                row.value = r.value();
                 if (row instanceof Section) owner = null;
                 else if (row instanceof SubSection s) owner = s;
                 else row.owner = owner;
@@ -115,8 +120,12 @@ public final class ConfigScreen extends Screen {
             return Grid.ROW;
         }
 
+        /** The setting behind the row (its reset icon), or null. */
+        Value<?> value;
+
         void renderLabel(GuiGraphics g, float x, float w) {
-            DrawText.text(g, DrawText.fit(label.getString(), (int) (w / 2 - Grid.GAP)), x, DrawText.textY(y, Grid.ROW), Theme.WHITE, false);
+            // Short of the middle by the reset icon too, so the label never jumps when the icon shows.
+            DrawText.text(g, DrawText.fit(label.getString(), (int) (w / 2 - 2 * Grid.GAP - RESET)), x, DrawText.textY(y, Grid.ROW), Theme.WHITE, false);
         }
 
         abstract void render(GuiGraphics g, float x, float w, int mx, int my);
@@ -124,7 +133,45 @@ public final class ConfigScreen extends Screen {
         boolean click(double mx, double my, float x, float w) {
             return false;
         }
+
+        void drag(double mx, float x, float w) {}
+
+        void release() {}
+
+        /** Where the row's control starts (the reset icon sits left of it). */
+        float controlLeft(float x, float w) {
+            return x + w / 2;
+        }
+
+        /** The reset icon's middle. */
+        float resetX(float x, float w) {
+            return controlLeft(x, w) - Grid.GAP - RESET / 2f;
+        }
+
+        /** The icon shows while the pointer is over a row whose setting differs from its default. */
+        boolean resetShown(float x, float w, int mx, int my) {
+            return value != null && !value.isDefault() && my >= y && my < y + Grid.ROW && mx >= x && mx < x + w;
+        }
+
+        void renderReset(GuiGraphics g, float x, float w, int mx, int my) {
+            if (!resetShown(x, w, mx, my)) return;
+            float cx = resetX(x, w), cy = y + Grid.ROW / 2f;
+            boolean hover = Draw.inRect(mx, my, cx - RESET / 2f - 1, cy - RESET / 2f - 1, RESET + 2, RESET + 2);
+            if (hover) Cursors.want(Cursors.Shape.HAND);
+            Draw.icon(g, Icon.RESET, cx, cy, RESET, hover ? Theme.GOLD : Theme.TEXT_MUTED);
+        }
+
+        boolean resetClick(double mx, double my, float x, float w) {
+            if (!resetShown(x, w, (int) mx, (int) my)) return false;
+            float cx = resetX(x, w), cy = y + Grid.ROW / 2f;
+            if (!Draw.inRect(mx, my, cx - RESET / 2f - 1, cy - RESET / 2f - 1, RESET + 2, RESET + 2)) return false;
+            value.reset();
+            return true;
+        }
     }
+
+    /** The reset icon of a row, GUI units. */
+    private static final int RESET = 10;
 
     private static final class Section extends Row {
         Section(String key) {
@@ -179,7 +226,77 @@ public final class ConfigScreen extends Screen {
         }
     }
 
-    private static final class Toggle extends Row {
+    /** The list open under its row, and that row; null while none is open. */
+    private ToggleList openList;
+    private ListRow openRow;
+
+    private void closeList() {
+        if (openList != null) openList.closed();
+        openList = null;
+        openRow = null;
+    }
+
+    /**
+     * A switch with an arrow left of it that opens its list under the row (only while the switch is on; grey and still
+     * while it is off).
+     */
+    private final class ListRow extends Toggle {
+        final AacsScreen.ToggleList spec;
+
+        ListRow(String key, Supplier<Boolean> get, Consumer<Boolean> set, AacsScreen.ToggleList spec) {
+            super(key, get, set);
+            this.spec = spec;
+        }
+
+        private float ax(float x, float w) {
+            return x + w - Grid.TOGGLE_W - Grid.PAD - 3;
+        }
+
+        @Override
+        float controlLeft(float x, float w) {
+            return ax(x, w) - 6;
+        }
+
+        @Override
+        void render(GuiGraphics g, float x, float w, int mx, int my) {
+            super.render(g, x, w, mx, my);
+            boolean on = get.get();
+            float ax = ax(x, w), ay = y + Grid.ROW / 2f;
+            if (on && Draw.inRect(mx, my, ax - 6, y, 12, Grid.ROW)) Cursors.want(Cursors.Shape.HAND);
+            int c = on ? Theme.GOLD : Theme.PANEL_LINE;
+            if (openRow == this) Draw.triangle(g, ax - 3, ay - 1.5f, ax + 3, ay - 1.5f, ax, ay + 2f, c);
+            else Draw.triangle(g, ax - 1.5f, ay - 3, ax - 1.5f, ay + 3, ax + 2f, ay, c);
+        }
+
+        @Override
+        boolean click(double mx, double my, float x, float w) {
+            if (Draw.inRect(mx, my, ax(x, w) - 6, y, 12, Grid.ROW)) {
+                if (openRow == this) closeList();
+                else if (get.get()) {
+                    closeList();
+                    openList = new ToggleList(spec.entries().get(), spec.off(), spec.onClosed());
+                    openRow = this;
+                    scroller.to(rowTop(this)); // the row as high as the list goes, so the entries get room
+                }
+                return true;
+            }
+            boolean took = super.click(mx, my, x, w);
+            if (took && !get.get() && openRow == this) closeList(); // switched off: the list goes
+            return took;
+        }
+    }
+
+    /** Where row {@code row} starts in the list (scrolled 0). */
+    private float rowTop(Row row) {
+        float at = 0;
+        for (Row r : rows) {
+            if (r == row) return at;
+            at += r.listHeight();
+        }
+        return 0;
+    }
+
+    private static class Toggle extends Row {
         final Supplier<Boolean> get;
         final Consumer<Boolean> set;
 
@@ -191,6 +308,11 @@ public final class ConfigScreen extends Screen {
 
         private float tx(float x, float w) {
             return x + w - Grid.TOGGLE_W;
+        }
+
+        @Override
+        float controlLeft(float x, float w) {
+            return tx(x, w);
         }
 
         private float ty() {
@@ -207,6 +329,171 @@ public final class ConfigScreen extends Screen {
         boolean click(double mx, double my, float x, float w) {
             if (!Ui.toggleHit(tx(x, w), ty(), mx, my)) return false;
             set.accept(!get.get());
+            return true;
+        }
+    }
+
+    /** Width of the value column right of a slider's track, at least. */
+    private static final int VALUE_W = 32;
+
+    /** A number or a choice in steps on a track, its value in words right of it (as Teyvat Cartographia's). */
+    private static final class SliderRow extends Row {
+        final AacsScreen.Slider s;
+        final Supplier<Double> get;
+        final Consumer<Double> set;
+        float valueW = VALUE_W;
+
+        SliderRow(String key, AacsScreen.Slider s, Supplier<Double> get, Consumer<Double> set) {
+            super(Component.translatable(key), Component.translatable(key + ".tooltip"));
+            this.s = s;
+            this.get = get;
+            this.set = set;
+        }
+
+        private int nearestStep(double v) {
+            int best = 0;
+            for (int i = 1; i < s.steps.length; i++) if (Math.abs(s.steps[i] - v) < Math.abs(s.steps[best] - v)) best = i;
+            return best;
+        }
+
+        double toT(double v) {
+            if (s.steps != null) return nearestStep(v) / (double) (s.steps.length - 1);
+            return s.log ? (Math.log(v) - Math.log(s.min)) / (Math.log(s.max) - Math.log(s.min)) : (v - s.min) / (s.max - s.min);
+        }
+
+        double fromT(double t) {
+            t = Math.max(0, Math.min(1, t));
+            if (s.steps != null) return s.steps[(int) Math.round(t * (s.steps.length - 1))];
+            double v = s.log ? Math.exp(Math.log(s.min) + t * (Math.log(s.max) - Math.log(s.min))) : s.min + t * (s.max - s.min);
+            return s.integer ? Math.round(v) : Math.round(v * 100) / 100.0;
+        }
+
+        float trackX(float x, float w) {
+            return x + w / 2;
+        }
+
+        float trackW(float w) {
+            return w / 2 - valueW - Grid.PAD;
+        }
+
+        static float knobHalf() {
+            return Theme.Style.squareUi ? 4 : 7;
+        }
+
+        @Override
+        void render(GuiGraphics g, float x, float w, int mx, int my) {
+            renderLabel(g, x, w);
+            if (s.stepKeys != null) {
+                int widest = 0;
+                for (String k : s.stepKeys) widest = Math.max(widest, DrawText.width(Component.translatable(k)));
+                valueW = Math.max(VALUE_W, widest + Grid.GAP);
+            }
+            float tx0 = trackX(x, w), tw0 = trackW(w), cy = y + Grid.ROW / 2f;
+            float half = knobHalf(), tx = tx0 + half, tw = tw0 - 2 * half;
+            int marks = s.stepKeys != null ? s.stepKeys.length : s.steps != null ? s.steps.length
+                    : s.integer && s.max - s.min <= 8 ? (int) (s.max - s.min) + 1 : 0;
+            if (marks > 1) {
+                for (int i = 0; i < marks; i++) {
+                    float sx = Math.round(tx + tw * i / (marks - 1f));
+                    Draw.rect(g, sx - 0.5f, cy - 4, sx + 0.5f, cy + 4, Theme.SLIDER_TICK);
+                }
+            }
+            double v = get.get();
+            float t = (float) Math.max(0, Math.min(1, toT(v)));
+            boolean hover = Draw.inRect(mx, my, tx0 - Grid.PAD, y, tw0 + 2 * Grid.PAD, Grid.ROW);
+            if (hover) Cursors.want(Cursors.Shape.RESIZE_H);
+            if (Theme.Style.squareUi) {
+                Draw.rect(g, tx0, cy - 2, tx0 + tw0, cy + 2, Theme.TOGGLE_TRACK_OFF);
+                Draw.rect(g, tx0, cy - 2, tx + tw * t, cy + 2, Theme.GOLD);
+                float kx = Math.round(tx + tw * t), kh = hover ? 7 : 6;
+                Draw.rect(g, kx - 4, cy - kh, kx + 4, cy + kh, Theme.TOGGLE_KNOB);
+                Draw.frame(g, kx - 4, cy - kh, 8, 2 * kh, 1, Theme.SLIDER_TICK);
+            } else {
+                Draw.capsule(g, tx0, cy - 2, tw0, 4, Theme.TOGGLE_TRACK_OFF);
+                Draw.capsule(g, tx0, cy - 2, Math.max(4, half + tw * t), 4, Theme.GOLD);
+                float k = hover ? 7 : 6;
+                Draw.diamond(g, tx + tw * t, cy, k, Theme.TOGGLE_KNOB);
+                Draw.diamondOutline(g, tx + tw * t, cy, k, 1, Theme.SLIDER_TICK);
+            }
+            DrawText.textRight(g, Component.literal(DrawText.fit(text(v), (int) (valueW + Grid.GAP))), x + w, DrawText.textY(y, Grid.ROW), Theme.CREAM, false);
+        }
+
+        private String text(double v) {
+            if (s.stepKeys != null) return Component.translatable(s.stepKeys[(int) Math.max(0, Math.min(s.stepKeys.length - 1, Math.round(v)))]).getString();
+            if (s.labeler != null) return s.labeler.apply(v);
+            String n = s.integer ? Long.toString(Math.round(v)) : String.format(java.util.Locale.ROOT, "%.2f", v);
+            return n + s.unit;
+        }
+
+        @Override
+        boolean click(double mx, double my, float x, float w) {
+            if (!Draw.inRect(mx, my, trackX(x, w) - Grid.PAD, y, trackW(w) + 2 * Grid.PAD, Grid.ROW)) return false;
+            drag(mx, x, w);
+            return true;
+        }
+
+        @Override
+        void drag(double mx, float x, float w) {
+            float half = knobHalf();
+            set.accept(fromT((mx - trackX(x, w) - half) / (trackW(w) - 2 * half)));
+        }
+
+        @Override
+        void release() {
+            if (s.onRelease != null) s.onRelease.run();
+        }
+    }
+
+    /** A choice button with arrows at both ends: a click on its left or right half steps back or forward. */
+    private static final class ChoiceRow<T> extends Row {
+        static final int H = 16;
+        final AacsScreen.Choice<T> c;
+        final Supplier<T> get;
+        final Consumer<T> set;
+
+        ChoiceRow(String key, AacsScreen.Choice<T> c, Supplier<T> get, Consumer<T> set) {
+            super(Component.translatable(key), Component.translatable(key + ".tooltip"));
+            this.c = c;
+            this.get = get;
+            this.set = set;
+        }
+
+        float by() {
+            return y + (Grid.ROW - H) / 2f;
+        }
+
+        /** It does something: active now, and more than one option to step through. */
+        boolean active() {
+            return c.activeWhen.getAsBoolean() && c.options.get().size() > 1;
+        }
+
+        @Override
+        void render(GuiGraphics g, float x, float w, int mx, int my) {
+            renderLabel(g, x, w);
+            float bx = controlLeft(x, w), bw = w / 2, by = by();
+            boolean active = active(), hover = Draw.inRect(mx, my, bx, by, bw, H);
+            if (hover) Cursors.want(active ? Cursors.Shape.HAND : Cursors.Shape.UNAVAILABLE);
+            hover &= active;
+            int fill = active ? hover ? Theme.BUTTON_HOVER : Theme.BUTTON : Ui.inactive(Theme.BUTTON);
+            if (Theme.Style.squareUi) Draw.rect(g, bx, by, bx + bw, by + H, fill);
+            else Draw.capsule(g, bx, by, bw, H, fill);
+            Component name = Component.literal(DrawText.fit(c.names.apply(get.get()).getString(), (int) (bw - 2 * H)));
+            DrawText.textCentered(g, name, bx + bw / 2, DrawText.textY(by, H), active ? Theme.CREAM : Ui.inactive(Theme.CREAM), false);
+            float cy = by + H / 2f, a = H / 2f;
+            int arrow = active ? Theme.GOLD : Ui.inactive(Theme.GOLD);
+            Draw.triangle(g, bx + a - 2, cy, bx + a + 2, cy - 4, bx + a + 2, cy + 4, arrow);
+            Draw.triangle(g, bx + bw - a + 2, cy, bx + bw - a - 2, cy - 4, bx + bw - a - 2, cy + 4, arrow);
+        }
+
+        @Override
+        boolean click(double mx, double my, float x, float w) {
+            float bx = controlLeft(x, w), bw = w / 2;
+            if (!Draw.inRect(mx, my, bx, by(), bw, H)) return false;
+            if (!active()) return true; // the click is taken, the value stays
+            List<T> options = c.options.get();
+            int cur = Math.max(0, options.indexOf(get.get()));
+            int i = (cur + (mx < bx + bw / 2 ? -1 : 1) + options.size()) % options.size();
+            set.accept(options.get(i));
             return true;
         }
     }
@@ -346,8 +633,15 @@ public final class ConfigScreen extends Screen {
         else super.renderBackground(g, mx, my, pt);
     }
 
+    /** Development checks only: where the pointer is taken to be (GUI units) instead of the mouse; null in play. */
+    public static int[] testPointer;
+
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
+        if (testPointer != null) {
+            mx = testPointer[0];
+            my = testPointer[1];
+        }
         Theme.use(spec.palette, !spec.rounded.getAsBoolean());
         Cursors.begin();
         renderBackground(g, mx, my, pt);
@@ -372,10 +666,13 @@ public final class ConfigScreen extends Screen {
         EdgeFade.capture(g);
         g.enableScissor((int) panelX, (int) listTop, (int) (panelX + panelW), (int) listBottom);
         float yy = listTop - scroll;
-        int rowMy = my >= listTop && my < listBottom ? my : -10_000;
+        int rowMy = my >= listTop && my < listBottom && (openList == null || !openList.over(mx, my)) ? my : -10_000;
         for (Row r : rows) {
             r.y = yy;
-            if (r.shown() && yy + r.height() > listTop && yy < listBottom) r.render(g, contentX(), contentW(), mx, rowMy);
+            if (r.shown() && yy + r.height() > listTop && yy < listBottom) {
+                r.render(g, contentX(), contentW(), mx, rowMy);
+                r.renderReset(g, contentX(), contentW(), mx, rowMy);
+            }
             yy += r.listHeight();
         }
         g.disableScissor();
@@ -383,6 +680,18 @@ public final class ConfigScreen extends Screen {
         EdgeFade.draw(g, panelX, barX() - Grid.GAP, listTop, listBottom, FADE,
                 Math.min(1, scroll / FADE), Math.min(1, Math.max(0, total - scroll - view) / FADE));
         EdgeFade.release();
+        // The open list, under its row and over the rows below it; it closes when its row leaves the view (where the
+        // list is going: it may slide in while the list opens).
+        if (openList != null) {
+            float target = listTop + rowTop(openRow) - scroller.target();
+            if (!rows.contains(openRow) || !openRow.shown() || target < listTop - 0.5f || target + Grid.ROW > listBottom + 0.5f) closeList();
+            else {
+                float top = openRow.y + Grid.ROW;
+                g.enableScissor((int) panelX, (int) listTop, (int) (panelX + panelW), (int) listBottom);
+                openList.render(g, contentX(), top, contentW(), openList.height(listBottom - top), mx, my);
+                g.disableScissor();
+            }
+        }
         renderBar(g, total, mx, my);
 
         float bw = footerButtonW(), by = footerY();
@@ -393,6 +702,7 @@ public final class ConfigScreen extends Screen {
         Ui.actionButton(g, footerButtonX(n), by, bw, Component.translatable("aacs.reset"), Icon.RESET, true, mx, my);
         Ui.actionButton(g, footerButtonX(n + 1), by, bw, CommonComponents.GUI_DONE, Icon.CHECK, true, mx, my);
 
+        if (draggingRow != null) Cursors.force(Cursors.Shape.RESIZE_H);
         if (draggingBar) Cursors.force(Cursors.Shape.RESIZE_V);
         Cursors.apply();
     }
@@ -402,12 +712,14 @@ public final class ConfigScreen extends Screen {
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         layout();
+        if (openList != null && openList.click(mx, my, button)) return true;
         if (Ui.closeHit(panelX, panelY, panelW, mx, my)) {
             onClose();
             return true;
         }
         for (int i = 0; tabs.size() > 1 && i < tabs.size(); i++) {
             if (Draw.inRect(mx, my, tabX(i), tabY(), tabW(i), TAB_H)) {
+                closeList();
                 tab = i;
                 SHOWN_TAB.put(spec.modId, i);
                 rows = tabs.get(i);
@@ -442,7 +754,12 @@ public final class ConfigScreen extends Screen {
         }
         if (my >= listTop && my < listBottom) {
             for (Row r : rows) {
-                if (inView(r) && r.click(mx, my, contentX(), contentW())) return true;
+                if (!inView(r)) continue;
+                if (r.resetClick(mx, my, contentX(), contentW())) return true;
+                if (r.click(mx, my, contentX(), contentW())) {
+                    if (r instanceof SliderRow) draggingRow = r;
+                    return true;
+                }
             }
         }
         return super.mouseClicked(mx, my, button);
@@ -454,23 +771,41 @@ public final class ConfigScreen extends Screen {
             dragBar(my);
             return true;
         }
+        if (draggingRow != null) {
+            draggingRow.drag(mx, contentX(), contentW());
+            return true;
+        }
+        if (openList != null && openList.drag(my)) return true;
         return super.mouseDragged(mx, my, button, dx, dy);
     }
 
     @Override
     public boolean mouseReleased(double mx, double my, int button) {
+        if (draggingRow != null) draggingRow.release();
+        draggingRow = null;
         draggingBar = false;
+        if (openList != null) openList.release();
         return super.mouseReleased(mx, my, button);
     }
 
     @Override
     public boolean mouseScrolled(double mx, double my, double sx, double sy) {
+        if (openList != null && openList.over(mx, my)) {
+            openList.scrollBy(sy);
+            return true;
+        }
         scroller.wheel(sy, WHEEL);
         return true;
     }
 
     @Override
+    public boolean charTyped(char c, int mods) {
+        return openList != null && openList.charTyped(c, mods) || super.charTyped(c, mods);
+    }
+
+    @Override
     public boolean keyPressed(int key, int scan, int mods) {
+        if (openList != null && openList.keyPressed(key, scan, mods)) return true;
         if (key == GLFW.GLFW_KEY_ESCAPE) {
             onClose();
             return true;
@@ -505,6 +840,7 @@ public final class ConfigScreen extends Screen {
 
     @Override
     public void removed() {
+        closeList();
         Cursors.reset();
         EdgeFade.dispose();
         if (scaleCapped) {

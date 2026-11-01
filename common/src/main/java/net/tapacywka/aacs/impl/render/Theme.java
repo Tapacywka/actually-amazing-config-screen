@@ -11,7 +11,7 @@ import net.tapacywka.aacs.api.Palette;
 public final class Theme {
     private Theme() {}
 
-    public static int SETTINGS_DIM, PANEL_DARK, PANEL_DARK_HEADER, PANEL_HEADER_LINE, PANEL_DARK_TILE_HOVER, PANEL_LINE,
+    public static int SETTINGS_DIM, PANEL_DARK, PANEL_DARK_HEADER, PANEL_HEADER_LINE, PANEL_DARK_TILE, PANEL_DARK_TILE_HOVER, PANEL_LINE,
             INFO_BOX, GOLD, CREAM, WHITE, YELLOW, TEXT_MUTED, BUTTON, BUTTON_HOVER, BUTTON_HOVER_OUTLINE, BUTTON_DISABLED,
             BUTTON_ICON_BADGE, BUTTON_ICON_DISABLED, BUTTON_TEXT_DISABLED, SCROLL_TRACK, SCROLL_THUMB, TOGGLE_TRACK_OFF,
             TOGGLE_TRACK_ON, TOGGLE_KNOB, TOGGLE_OUTLINE, TOGGLE_OUTLINE_HOVER, TOGGLE_OFF_CROSS, SLIDER_TICK, CURSOR,
@@ -41,6 +41,7 @@ public final class Theme {
         PANEL_DARK = p.get("panel_dark");
         PANEL_DARK_HEADER = p.get("panel_dark_header");
         PANEL_HEADER_LINE = p.get("panel_header_line");
+        PANEL_DARK_TILE = p.get("panel_dark_tile");
         PANEL_DARK_TILE_HOVER = p.get("panel_dark_tile_hover");
         PANEL_LINE = p.get("panel_line");
         INFO_BOX = p.get("info_box");

@@ -6,6 +6,8 @@ plugins {
 // A small mod of the development game only: a settings screen with every kind of row (not in the JAR).
 sourceSets {
     testmod {
+        java.srcDir rootProject.file('common/src/testmod/java')
+        resources.srcDir rootProject.file('common/src/testmod/resources')
         compileClasspath += sourceSets.main.output
         runtimeClasspath += sourceSets.main.output
     }

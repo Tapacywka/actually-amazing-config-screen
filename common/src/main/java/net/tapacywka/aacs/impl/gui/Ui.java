@@ -23,6 +23,7 @@ public final class Ui {
         public static final int ICON = 12;
         public static final int ICON_L = 16;
         public static final int HEADER_H = 28;
+        public static final int CHIP_H = 20;
         public static final int ROW = 20;
         public static final int ACTION_H = 24;
         public static final int TOGGLE_W = 28, TOGGLE_H = 16;

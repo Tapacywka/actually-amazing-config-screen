@@ -1,3 +1,6 @@
 {
-  "aacs.reset": "Сброс"
+  "aacs.reset": "Сброс",
+  "aacs.list.find": "Найти",
+  "aacs.list.count": "Включено: %s из %s",
+  "aacs.list.none": "Ничего с таким названием"
 }

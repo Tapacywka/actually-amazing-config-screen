@@ -7,6 +7,8 @@ plugins {
 // from Mod Menu; not in the JAR.
 sourceSets {
     testmod {
+        java.srcDir rootProject.file('common/src/testmod/java')
+        resources.srcDir rootProject.file('common/src/testmod/resources')
         compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
         runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
     }

@@ -18,6 +18,7 @@ public final class Palette {
         d.put("panel_dark", 0xB8272F3A);
         d.put("panel_dark_header", 0xC8383F4C);
         d.put("panel_header_line", 0x30000000);
+        d.put("panel_dark_tile", 0xFF2E3747);
         d.put("panel_dark_tile_hover", 0xFF3A4558);
         d.put("panel_line", 0x40FFFFFF);
         d.put("info_box", 0xB3232833);

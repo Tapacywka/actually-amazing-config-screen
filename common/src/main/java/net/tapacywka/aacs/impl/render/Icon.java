@@ -11,6 +11,7 @@ public final class Icon {
     public static final Icon CHECK = new Icon(Theme.asset("textures/icon/check.png"));
     public static final Icon RESET = new Icon(Theme.asset("textures/icon/reset.png"));
     public static final Icon CLOSE = new Icon(Theme.asset("textures/icon/close.png"));
+    public static final Icon SEARCH = new Icon(Theme.asset("textures/icon/search.png"));
 
     public final ResourceLocation texture;
 
