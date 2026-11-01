@@ -1,0 +1,10 @@
+{
+  "default": [13, 5],
+  "hand": [30, 4],
+  "text": [32, 32],
+  "move": [32, 32],
+  "resize_v": [32, 32],
+  "resize_h": [32, 32],
+  "unavailable": [7, 6],
+  "loading": [9, 6]
+}

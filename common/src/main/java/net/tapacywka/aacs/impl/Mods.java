@@ -1,0 +1,54 @@
+package net.tapacywka.aacs.impl;
+
+/**
+ * Which other mods are loaded, asked of whichever loader runs the game (common code knows neither loader's API, so
+ * both are asked by reflection, once each).
+ */
+public final class Mods {
+    private Mods() {}
+
+    public static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(net.tapacywka.aacs.api.Aacs.MOD_ID);
+
+    public static boolean loaded(String id) {
+        try {
+            Object loader = Class.forName("net.fabricmc.loader.api.FabricLoader").getMethod("getInstance").invoke(null);
+            return (boolean) loader.getClass().getMethod("isModLoaded", String.class).invoke(loader, id);
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // Not Fabric.
+        }
+        try {
+            Object list = Class.forName("net.neoforged.fml.ModList").getMethod("get").invoke(null);
+            return (boolean) list.getClass().getMethod("isLoaded", String.class).invoke(list, id);
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            return false;
+        }
+    }
+
+    private static int vulkan, topFirst;
+
+    /** VulkanMod (or VulkanMod-Reforged, the same id) draws the game. */
+    public static boolean vulkan() {
+        if (vulkan == 0) vulkan = loaded("vulkanmod") ? 1 : -1;
+        return vulkan > 0;
+    }
+
+    /**
+     * The original VulkanMod (Fabric) keeps a texture drawn into with its top row first, OpenGL and VulkanMod-Reforged
+     * (NeoForge) the bottom row first (lesson of Teyvat Cartographia, 30.10.2026).
+     */
+    private static boolean vulkanTopFirst() {
+        if (!vulkan()) return false;
+        try {
+            Class.forName("net.neoforged.fml.ModList", false, Mods.class.getClassLoader());
+            return false;
+        } catch (ClassNotFoundException e) {
+            return true;
+        }
+    }
+
+    /** A texture coordinate {@code v} of a layer the library drew into, as the renderer keeps its rows. */
+    public static float v(float v) {
+        if (topFirst == 0) topFirst = vulkanTopFirst() ? 1 : -1;
+        return topFirst > 0 ? 1 - v : v;
+    }
+}

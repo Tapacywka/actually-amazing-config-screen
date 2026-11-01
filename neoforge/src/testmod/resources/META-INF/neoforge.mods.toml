@@ -1,0 +1,16 @@
+modLoader="javafml"
+loaderVersion="*"
+license="MIT"
+
+[[mods]]
+modId="aacs_testmod"
+version="1"
+displayName="AACS Test Mod"
+description='''Development only: a settings screen with every kind of row of Actually Amazing Config Screen.'''
+
+[[dependencies.aacs_testmod]]
+    modId="aacs"
+    type="required"
+    versionRange="*"
+    ordering="AFTER"
+    side="BOTH"

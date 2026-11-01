@@ -3,10 +3,21 @@ plugins {
     id 'net.neoforged.moddev'
 }
 
+// A small mod of the development game only: a settings screen with every kind of row (not in the JAR).
+sourceSets {
+    testmod {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
 neoForge {
     enable {
         version = project.neo_version
     }
+
+    // The test mod of the development game (neoforge/src/testmod): never in the JAR.
+    addModdingDependenciesTo(sourceSets.testmod)
 
     parchment {
         mappingsVersion = project.parchment_mappings_version
@@ -17,6 +28,9 @@ neoForge {
         client {
             client()
             gameDirectory = rootProject.file('run')
+            // 1080p, as every check of the screen (GUI 3 there); -Pshots=true: the test mod's shots, then the game closes.
+            programArguments.addAll('--width', '1920', '--height', '1080')
+            if (project.findProperty('shots') == 'true') systemProperty 'aacs.shots', 'true'
         }
 
         configureEach {
@@ -28,6 +42,9 @@ neoForge {
     mods {
         "${mod_id}" {
             sourceSet(sourceSets.main)
+        }
+        aacs_testmod {
+            sourceSet(sourceSets.testmod)
         }
     }
 }

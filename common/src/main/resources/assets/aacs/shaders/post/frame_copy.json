@@ -1,0 +1,12 @@
+{
+    "targets": [
+        "copy"
+    ],
+    "passes": [
+        {
+            "name": "aacs_frame_copy",
+            "intarget": "minecraft:main",
+            "outtarget": "copy"
+        }
+    ]
+}
