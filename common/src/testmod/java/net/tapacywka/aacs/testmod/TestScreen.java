@@ -55,6 +55,7 @@ public final class TestScreen {
 
         String k = "aacs_testmod.config.";
         return AacsScreen.builder("aacs_testmod", file)
+                .rounded(() -> rounded)
                 .tab(k + "tab.display", t -> {
                     t.section(k + "section.look").toggle(GRID).toggle(LABELS)
                             .slider(OPACITY, s -> s.unit("%"))
@@ -97,6 +98,9 @@ public final class TestScreen {
 
     // ------------------------------------------------------------------ shots
 
+    /** The rounded style, switched on for the last shot. */
+    static boolean rounded;
+
     private static int tick = -1, step;
 
     public static void tick(AacsScreen screen, String prefix) {
@@ -125,6 +129,11 @@ public final class TestScreen {
                 mc.screen.mouseClicked(contentRight(mc.screen.width) - 28 - 8 - 3, p[1], 0); // the arrow left of the switch
             }
             case 5 -> shot(mc, prefix + "_list");
+            case 6 -> {
+                rounded = true;
+                ConfigScreen.testPointer = at(mc, 4);
+            }
+            case 7 -> shot(mc, prefix + "_rounded");
             default -> {
                 OPACITY.reset();
                 mc.stop();
