@@ -1,0 +1,108 @@
+{
+  "appearance": {
+    "theme": "default",
+    "minimapShape": "SQUARE",
+    "interfaceStyle": "RECTANGULAR"
+  },
+  "minimap": {
+    "enabled": true,
+    "radius": 48,
+    "corner": "TOP_LEFT",
+    "offsetX": 8,
+    "offsetY": 8,
+    "opacity": 0.95,
+    "padding": 0,
+    "fadeWidth": 15,
+    "fadeStrength": 100,
+    "infoGap": 0,
+    "textSize": 0,
+    "pillOpacity": 0,
+    "zoom": 1.0,
+    "orientation": "NORTH_UP",
+    "updateRate": "RATE_30",
+    "showCoordinates": true,
+    "showBiome": true,
+    "showTime": true,
+    "timeSource": "GAME_TIME",
+    "timeFormat": "HOURS_12",
+    "showDay": false
+  },
+  "pins": {
+    "custom": {
+      "enabled": true,
+      "map": true,
+      "minimap": true,
+      "marker": true,
+      "beam": true,
+      "path": true,
+      "pathMap": true,
+      "pathMinimap": true,
+      "pathWorld": true
+    },
+    "interactive": {
+      "enabled": true,
+      "map": true,
+      "minimap": true,
+      "marker": true,
+      "beam": true,
+      "path": true,
+      "pathMap": true,
+      "pathMinimap": true,
+      "pathWorld": true
+    },
+    "system": {
+      "enabled": true,
+      "map": true,
+      "minimap": true,
+      "marker": true,
+      "beam": true,
+      "path": true,
+      "pathMap": true,
+      "pathMinimap": true,
+      "pathWorld": true
+    },
+    "route": "LAND"
+  },
+  "worldmap": {
+    "showLabels": false,
+    "showGrid": false,
+    "defaultZoom": 1.0
+  },
+  "cartography": {
+    "chunksPerTick": 6,
+    "scanRadius": 16,
+    "maxCachedTiles": 160,
+    "detail": "HIGH",
+    "caves": true,
+    "plants": true,
+    "playerCone": true,
+    "plantsHidden": [],
+    "waterDepthShading": 100,
+    "shallowWater": 0
+  },
+  "compat": {
+    "minecraft": {
+      "netherFog": true,
+      "endFog": true
+    },
+    "aether": {
+      "fog": true
+    },
+    "the_sift": {
+      "ichorShimmer": true,
+      "snowShimmer": true,
+      "fog": true
+    },
+    "xaero": {
+      "pinType": "STAR",
+      "hidden": true,
+      "deaths": false
+    },
+    "waystones": {
+      "waystones": true,
+      "sharestones": true,
+      "warpPlates": true,
+      "inactive": true
+    }
+  }
+}
