@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "aacs_testmod",
+  "version": "1",
+  "name": "AACS Test Mod",
+  "description": "Development only: a settings screen with every kind of row of Actually Amazing Config Screen.",
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["net.tapacywka.aacs.testmod.AacsTestModFabric"],
+    "modmenu": ["net.tapacywka.aacs.testmod.AacsTestModFabric"]
+  },
+  "depends": {
+    "aacs": "*",
+    "fabric-api": "*"
+  }
+}

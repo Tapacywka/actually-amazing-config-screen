@@ -3,6 +3,39 @@ plugins {
     id 'net.fabricmc.fabric-loom-remap'
 }
 
+// A small mod of the development game only (fabric/src/testmod): the settings screen with every kind of row, opened
+// from Mod Menu; not in the JAR.
+sourceSets {
+    testmod {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+
+repositories {
+    maven { url = 'https://maven.terraformersmc.com/releases/' }
+}
+
+loom {
+    createRemapConfigurations(sourceSets.testmod)
+    mods {
+        aacs {
+            sourceSet sourceSets.main
+        }
+        aacs_testmod {
+            sourceSet sourceSets.testmod
+        }
+    }
+    runs {
+        client {
+            // 1080p, as every check of the screen (GUI 3 there); -Pshots=true: the test mod's shots, then the game closes.
+            programArgs '--width', '1920', '--height', '1080'
+            if (project.findProperty('shots') == 'true') vmArg '-Daacs.shots=true'
+            source sourceSets.testmod
+        }
+    }
+}
+
 // Local development runs, when present; not in the public repository.
 if (rootProject.file('devtest-fabric.gradle').exists()) apply from: rootProject.file('devtest-fabric.gradle')
 
@@ -13,6 +46,9 @@ dependencies {
         parchment("org.parchmentmc.data:parchment-${parchment_minecraft_version}:${parchment_mappings_version}@zip")
     }
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    // Only for the test mod of the development game.
+    modTestmodImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+    modTestmodImplementation "com.terraformersmc:modmenu:${modmenu_version}"
 }
 
 processResources {
