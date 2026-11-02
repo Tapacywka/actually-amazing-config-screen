@@ -57,9 +57,14 @@ public final class TestScreen {
         return AacsScreen.builder("aacs_testmod", file)
                 .rounded(() -> rounded)
                 .tab(k + "tab.display", t -> {
+                    // The tab's picture: a frame with the row's key; Opacity has its own, Corner only its description.
+                    t.defaultPreview((g, row, x, y, w, h, pt) -> {
+                        g.renderOutline((int) x, (int) y, (int) w, (int) h, 0xFFD3BC8E);
+                        g.drawCenteredString(net.minecraft.client.Minecraft.getInstance().font, row.substring(row.lastIndexOf('.') + 1), (int) (x + w / 2), (int) (y + h / 2 - 4), 0xFFECE5D8);
+                    });
                     t.section(k + "section.look").toggle(GRID).toggle(LABELS)
                             .slider(OPACITY, s -> s.unit("%"))
-                            .preview((g, x, y, w, h, pt) -> {
+                            .preview((g, row, x, y, w, h, pt) -> {
                                 // A gold square as opaque as the setting, over a checked ground.
                                 float side = Math.min(w, h) * 0.6f, sx = x + (w - side) / 2, sy = y + (h - side) / 2;
                                 for (int i = 0; i < 8; i++) for (int j = 0; j < 8; j++) {
@@ -70,7 +75,7 @@ public final class TestScreen {
                                 g.fill((int) sx, (int) sy, (int) (sx + side), (int) (sy + side), a << 24 | 0xD3BC8E);
                             })
                             .slider(ZOOM, s -> s.steps(0.25, 0.5, 1, 2, 4))
-                            .choice(CORNER)
+                            .choice(CORNER).noPreview()
                             .steps(k + "look.show", new String[]{k + "step.off", k + "step.map", k + "step.both"},
                                     () -> MAP.get() ? MINIMAP.get() ? 2 : 1 : 0, step -> { MAP.set(step >= 1); MINIMAP.set(step >= 2); })
                             .toggleList(FLOWERS, FLOWERS_OFF, TestScreen::flowers, null);
@@ -138,14 +143,24 @@ public final class TestScreen {
             }
             case 7 -> shot(mc, prefix + "_rounded");
             case 8 -> {
+                // The card with nothing pointed at, with the tab's picture (Show the grid), with none (Corner).
+                rounded = false;
+                ConfigScreen.testPointer = new int[]{2, 2};
+            }
+            case 9 -> shot(mc, prefix + "_prompt");
+            case 10 -> ConfigScreen.testPointer = at(mc, 2);
+            case 11 -> shot(mc, prefix + "_tabpreview");
+            case 12 -> ConfigScreen.testPointer = at(mc, 6);
+            case 13 -> shot(mc, prefix + "_nopreview");
+            case 14 -> {
                 // A window too narrow for the card: the description shows as a tooltip by the row.
                 rounded = false;
                 // 560 GUI units: the panel and its margins, too little left for the card (200) at any scale.
                 int w = (int) (mc.getWindow().getGuiScale() * 560);
                 org.lwjgl.glfw.GLFW.glfwSetWindowSize(mc.getWindow().getWindow(), w, mc.getWindow().getHeight());
             }
-            case 9 -> ConfigScreen.testPointer = at(mc, 4);
-            case 10 -> shot(mc, prefix + "_narrow");
+            case 15 -> ConfigScreen.testPointer = at(mc, 4);
+            case 16 -> shot(mc, prefix + "_narrow");
             default -> {
                 OPACITY.reset();
                 mc.stop();

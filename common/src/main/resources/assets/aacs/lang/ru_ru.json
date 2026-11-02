@@ -1,6 +1,8 @@
 {
   "aacs.reset": "Сброс",
-  "aacs.preview.none": "Наведите на настройку",
+  "aacs.preview": "Превью",
+  "aacs.preview.point": "Наведите на настройку,",
+  "aacs.preview.point_hint": "чтобы увидеть её превью.",
   "aacs.list.find": "Найти",
   "aacs.list.count": "Включено: %s из %s",
   "aacs.list.none": "Ничего с таким названием"

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleFunction;
+import java.util.function.DoubleSupplier;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
@@ -38,12 +39,16 @@ public final class AacsScreen {
     public final ConfigFile file;
     public final Component title;
     public final ResourceLocation icon;
-    public final Palette palette;
+    /** The colours, asked each frame (return the same object while they stay the same: a new one redraws). */
+    public final Supplier<Palette> palette;
     public final BooleanSupplier rounded;
     public final Background background;
     public final List<Button> buttons;
     public final Runnable onReset;
     public final List<Tab> tabs;
+    /** The card's title and the lines it shows with no setting pointed at. */
+    public final Component cardTitle;
+    public final List<Component> cardPrompt;
 
     private AacsScreen(Builder b) {
         modId = b.modId;
@@ -56,6 +61,8 @@ public final class AacsScreen {
         buttons = List.copyOf(b.buttons);
         onReset = b.onReset;
         tabs = List.copyOf(b.tabs);
+        cardTitle = b.cardTitle;
+        cardPrompt = List.copyOf(b.cardPrompt);
     }
 
     public static Builder builder(String modId, ConfigFile file) {
@@ -72,13 +79,15 @@ public final class AacsScreen {
         private final ConfigFile file;
         private Component title;
         private ResourceLocation icon;
-        private Palette palette = Palette.DEFAULT;
+        private Supplier<Palette> palette = () -> Palette.DEFAULT;
         private BooleanSupplier rounded = () -> false;
         private Background background;
         private final List<Button> buttons = new ArrayList<>();
         private Runnable onReset = () -> {};
         private final List<Tab> tabs = new ArrayList<>();
         private boolean modList = true;
+        private Component cardTitle = Component.translatable("aacs.preview");
+        private List<Component> cardPrompt = List.of(Component.translatable("aacs.preview.point"), Component.translatable("aacs.preview.point_hint"));
 
         private Builder(String modId, ConfigFile file) {
             this.modId = modId;
@@ -97,6 +106,12 @@ public final class AacsScreen {
         }
 
         public Builder palette(Palette palette) {
+            this.palette = () -> palette;
+            return this;
+        }
+
+        /** Colours that may change while the game runs (a theme from a resource pack). */
+        public Builder palette(Supplier<Palette> palette) {
             this.palette = palette;
             return this;
         }
@@ -121,6 +136,13 @@ public final class AacsScreen {
         /** Run after Reset has set every value back to its default (to redraw what they show). */
         public Builder onReset(Runnable onReset) {
             this.onReset = onReset;
+            return this;
+        }
+
+        /** The card's title ("Preview") and the lines it shows with no setting pointed at, instead of the library's. */
+        public Builder card(Component title, Component... prompt) {
+            this.cardTitle = title;
+            this.cardPrompt = List.of(prompt);
             return this;
         }
 
@@ -154,6 +176,7 @@ public final class AacsScreen {
         private final String modId;
         public final List<Row> rows = new ArrayList<>();
         private String subSection;
+        private Preview preview;
 
         private Tab(String modId, String key) {
             this.modId = modId;
@@ -163,20 +186,20 @@ public final class AacsScreen {
         /** A heading; it also ends the sub-section before it. */
         public Tab section(String key) {
             subSection = null;
-            rows.add(new Row(Row.Kind.SECTION, key, null, null, null, null, null, null, null));
+            rows.add(new Row(Row.Kind.SECTION, key, null, null, null, null, null, null, null, null));
             return this;
         }
 
         /** A sub-heading that folds: the rows after it, up to the next heading, belong to it. */
         public Tab subSection(String key) {
-            rows.add(new Row(Row.Kind.SUB_SECTION, key, null, null, null, null, null, null, null));
+            rows.add(new Row(Row.Kind.SUB_SECTION, key, null, null, null, null, null, null, null, null));
             subSection = key;
             return this;
         }
 
         /** A sub-heading with its own text (a mod's name); {@code key} still keeps it open or folded. */
         public Tab subSection(String key, Component label) {
-            rows.add(new Row(Row.Kind.SUB_SECTION, key, null, null, null, label, null, null, null));
+            rows.add(new Row(Row.Kind.SUB_SECTION, key, null, null, null, label, null, null, null, null));
             subSection = key;
             return this;
         }
@@ -186,15 +209,47 @@ public final class AacsScreen {
         }
 
         private Tab add(Row.Kind kind, String key, Supplier<?> get, Consumer<?> set, Value<?> value, Object options) {
-            rows.add(new Row(kind, key, subSection, get, set, null, value, options, null));
+            rows.add(new Row(kind, key, subSection, get, set, null, value, options, null, null));
             return this;
         }
 
-        /** The picture of the last row on the card beside the list. */
+        /** The picture of the last row on the card beside the list, instead of the tab's. */
         public Tab preview(Preview preview) {
             Row r = rows.remove(rows.size() - 1);
-            rows.add(new Row(r.kind(), r.key(), r.subSection(), r.get(), r.set(), r.label(), r.value(), r.options(), preview));
+            rows.add(new Row(r.kind(), r.key(), r.subSection(), r.get(), r.set(), r.label(), r.value(), r.options(), preview, r.then()));
             return this;
+        }
+
+        /**
+         * Run after the player changes the last row on this screen (the map drawn again, say): a switch or a choice
+         * once clicked, a slider once let go, any row set back by its reset icon.
+         */
+        public Tab then(Runnable after) {
+            Row r = rows.remove(rows.size() - 1);
+            if (r.kind() == Row.Kind.SECTION || r.kind() == Row.Kind.SUB_SECTION) throw new IllegalStateException("then() after a heading");
+            Runnable before = r.then();
+            Runnable then = before == null ? after : () -> {
+                before.run();
+                after.run();
+            };
+            rows.add(new Row(r.kind(), r.key(), r.subSection(), r.get(), r.set(), r.label(), r.value(), r.options(), r.preview(), then));
+            return this;
+        }
+
+        /** Only the name and description of the last row on the card, no picture. */
+        public Tab noPreview() {
+            return preview(Preview.NONE);
+        }
+
+        /** The picture of every row of the tab without one of its own (it is told which row it shows). */
+        public Tab defaultPreview(Preview preview) {
+            this.preview = preview;
+            return this;
+        }
+
+        /** The tab's picture for rows without one of their own, or null. */
+        public Preview preview() {
+            return preview;
         }
 
         // ---------------------------------------------------------------- switches
@@ -288,7 +343,12 @@ public final class AacsScreen {
          * {@link StringValue}; {@code names} gives the word for each.
          */
         public Tab choice(String key, StringValue value, Supplier<List<String>> options, Function<String, Component> names) {
+            return choice(key, value, options, names, c -> {});
+        }
+
+        public Tab choice(String key, StringValue value, Supplier<List<String>> options, Function<String, Component> names, Consumer<Choice<String>> more) {
             Choice<String> c = new Choice<>(options, names);
+            more.accept(c);
             return add(Row.Kind.CHOICE, key, value::get, (String s) -> value.set(s), value, c);
         }
     }
@@ -298,9 +358,19 @@ public final class AacsScreen {
      * in the area given. {@link #prepare} runs before anything is clipped (a picture drawn into a layer of its own).
      */
     public interface Preview {
-        default void prepare(float w, float h, float partialTick) {}
+        /** No picture: the card shows the row's name and description only (see {@link Tab#noPreview}). */
+        Preview NONE = (g, row, x, y, w, h, partialTick) -> {};
 
-        void draw(GuiGraphics g, float x, float y, float w, float h, float partialTick);
+        /** Runs each frame the picture shows, before anything is clipped; {@code row} is the row's lang key. */
+        default void prepare(GuiGraphics g, String row, float w, float h, float partialTick) {}
+
+        /** Draws the picture of {@code row} (its lang key) in the area, clipped to it. */
+        void draw(GuiGraphics g, String row, float x, float y, float w, float h, float partialTick);
+
+        /** Whether the card writes "name: value" under the picture; false for a picture with captions of its own. */
+        default boolean caption(String row) {
+            return true;
+        }
     }
 
     /** One entry of a {@link Tab#toggleList}: its id (as kept in the list of those off), name and colour (0: none). */
@@ -319,6 +389,7 @@ public final class AacsScreen {
         public String[] stepKeys;
         public DoubleFunction<String> labeler;
         public Runnable onRelease;
+        public DoubleSupplier maxNow;
 
         Slider(double min, double max, boolean integer) {
             this.min = min;
@@ -350,6 +421,17 @@ public final class AacsScreen {
             return this;
         }
 
+        /** The highest value as it is now (a size that depends on the screen), instead of the value's own. */
+        public Slider max(DoubleSupplier maxNow) {
+            this.maxNow = maxNow;
+            return this;
+        }
+
+        /** The highest value now. */
+        public double maxNow() {
+            return maxNow != null ? Math.max(min + 1, maxNow.getAsDouble()) : max;
+        }
+
         /** Run once the slider is let go (a costly redraw, say). */
         public Slider onRelease(Runnable onRelease) {
             this.onRelease = onRelease;
@@ -359,13 +441,20 @@ public final class AacsScreen {
 
     /** How a choice with arrows names its options and when it does anything. */
     public static final class Choice<T> {
-        public final Supplier<List<T>> options;
+        public Supplier<List<T>> options;
         public Function<T, Component> names;
         public BooleanSupplier activeWhen = () -> true;
 
         Choice(Supplier<List<T>> options, Function<T, Component> names) {
             this.options = options;
             this.names = names;
+        }
+
+        /** Only these, in this order (some constants of an enum, say), instead of all. */
+        public Choice<T> only(List<T> options) {
+            List<T> copy = List.copyOf(options);
+            this.options = () -> copy;
+            return this;
         }
 
         public Choice<T> names(Function<T, Component> names) {
@@ -385,7 +474,7 @@ public final class AacsScreen {
      * for rows over the mod's own getter and setter; {@code options} a {@link Slider} or a {@link Choice}.
      */
     public record Row(Kind kind, String key, String subSection, Supplier<?> get, Consumer<?> set, Component label,
-                      Value<?> value, Object options, Preview preview) {
+                      Value<?> value, Object options, Preview preview, Runnable then) {
         public enum Kind { SECTION, SUB_SECTION, TOGGLE, TOGGLE_LIST, SLIDER, CHOICE }
     }
 }

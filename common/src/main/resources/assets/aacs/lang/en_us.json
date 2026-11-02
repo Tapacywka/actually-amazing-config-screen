@@ -1,6 +1,8 @@
 {
   "aacs.reset": "Reset",
-  "aacs.preview.none": "Point at a setting",
+  "aacs.preview": "Preview",
+  "aacs.preview.point": "Point at a setting:",
+  "aacs.preview.point_hint": "its preview shows here.",
   "aacs.list.find": "Find",
   "aacs.list.count": "On: %s of %s",
   "aacs.list.none": "Nothing by that name"

@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.tapacywka.aacs.api.AacsScreen;
 import net.tapacywka.aacs.api.Value;
 import net.tapacywka.aacs.impl.gui.Ui.Grid;
@@ -79,12 +80,19 @@ public final class ConfigScreen extends Screen {
                     case CHOICE -> new ChoiceRow<>(r.key(), cast(r.options()), cast(r.get()), cast(r.set()));
                 };
                 row.value = r.value();
-                row.preview = r.preview();
+                // The row's own picture, else its tab's; none (only the description) for NONE or without either.
+                AacsScreen.Preview p = r.preview() != null ? r.preview() : t.preview();
+                row.preview = p == AacsScreen.Preview.NONE ? null : p;
+                row.langKey = r.key();
+                row.then = r.then();
                 if (row instanceof Section) owner = null;
                 else if (row instanceof SubSection s) owner = s;
                 else row.owner = owner;
                 list.add(row);
             }
+            List<String[]> steps = new ArrayList<>();
+            for (Row r : list) if (r instanceof SliderRow sr && sr.s.stepKeys != null) steps.add(sr.s.stepKeys);
+            for (Row r : list) if (r instanceof SliderRow sr && sr.s.stepKeys != null) sr.stepGroup = steps;
             tabs.add(list);
         }
         tab = Math.min(SHOWN_TAB.getOrDefault(spec.modId, 0), tabs.size() - 1);
@@ -127,6 +135,14 @@ public final class ConfigScreen extends Screen {
         Value<?> value;
         /** The mod's picture of the setting on the card, or null. */
         AacsScreen.Preview preview;
+        /** The row's lang key, as the picture is told which row it shows. */
+        String langKey;
+        /** Run after the player changed the row (see {@link AacsScreen.Tab#then}), or null. */
+        Runnable then;
+
+        void changed() {
+            if (then != null) then.run();
+        }
 
         /** The value as the row shows it ("On", "40%", "Top left"), for the card's caption; null for headings. */
         String valueText() {
@@ -176,6 +192,7 @@ public final class ConfigScreen extends Screen {
             float cx = resetX(x, w), cy = y + Grid.ROW / 2f;
             if (!Draw.inRect(mx, my, cx - RESET / 2f - 1, cy - RESET / 2f - 1, RESET + 2, RESET + 2)) return false;
             value.reset();
+            changed();
             return true;
         }
     }
@@ -284,7 +301,7 @@ public final class ConfigScreen extends Screen {
                 if (openRow == this) closeList();
                 else if (get.get()) {
                     closeList();
-                    openList = new ToggleList(spec.entries().get(), spec.off(), spec.onClosed());
+                    openList = new ToggleList(langKey, spec.entries().get(), spec.off(), spec.onClosed());
                     openRow = this;
                     scroller.to(rowTop(this)); // the row as high as the list goes, so the entries get room
                 }
@@ -344,6 +361,7 @@ public final class ConfigScreen extends Screen {
         boolean click(double mx, double my, float x, float w) {
             if (!Ui.toggleHit(tx(x, w), ty(), mx, my)) return false;
             set.accept(!get.get());
+            changed();
             return true;
         }
     }
@@ -357,6 +375,8 @@ public final class ConfigScreen extends Screen {
         final Supplier<Double> get;
         final Consumer<Double> set;
         float valueW = VALUE_W;
+        /** The step names of every step row of the tab, this one's too. */
+        List<String[]> stepGroup = List.of();
 
         SliderRow(String key, AacsScreen.Slider s, Supplier<Double> get, Consumer<Double> set) {
             super(Component.translatable(key), Component.translatable(key + ".tooltip"));
@@ -373,13 +393,13 @@ public final class ConfigScreen extends Screen {
 
         double toT(double v) {
             if (s.steps != null) return nearestStep(v) / (double) (s.steps.length - 1);
-            return s.log ? (Math.log(v) - Math.log(s.min)) / (Math.log(s.max) - Math.log(s.min)) : (v - s.min) / (s.max - s.min);
+            return s.log ? (Math.log(v) - Math.log(s.min)) / (Math.log(s.maxNow()) - Math.log(s.min)) : (v - s.min) / (s.maxNow() - s.min);
         }
 
         double fromT(double t) {
             t = Math.max(0, Math.min(1, t));
             if (s.steps != null) return s.steps[(int) Math.round(t * (s.steps.length - 1))];
-            double v = s.log ? Math.exp(Math.log(s.min) + t * (Math.log(s.max) - Math.log(s.min))) : s.min + t * (s.max - s.min);
+            double v = s.log ? Math.exp(Math.log(s.min) + t * (Math.log(s.maxNow()) - Math.log(s.min))) : s.min + t * (s.maxNow() - s.min);
             return s.integer ? Math.round(v) : Math.round(v * 100) / 100.0;
         }
 
@@ -399,14 +419,18 @@ public final class ConfigScreen extends Screen {
         void render(GuiGraphics g, float x, float w, int mx, int my) {
             renderLabel(g, x, w);
             if (s.stepKeys != null) {
+                // The value column fits the longest step name of every step row of the tab (in the current language),
+                // so their tracks end at the same place.
                 int widest = 0;
-                for (String k : s.stepKeys) widest = Math.max(widest, DrawText.width(Component.translatable(k)));
-                valueW = Math.max(VALUE_W, widest + Grid.GAP);
+                for (String[] keys : stepGroup) for (String k : keys) widest = Math.max(widest, DrawText.width(Component.translatable(k)));
+                valueW = Math.max(VALUE_W, widest + Grid.GAP); // a gap between the knob at the end and the word
             }
             float tx0 = trackX(x, w), tw0 = trackW(w), cy = y + Grid.ROW / 2f;
             float half = knobHalf(), tx = tx0 + half, tw = tw0 - 2 * half;
-            int marks = s.stepKeys != null ? s.stepKeys.length : s.steps != null ? s.steps.length
-                    : s.integer && s.max - s.min <= 8 ? (int) (s.max - s.min) + 1 : 0;
+            // A small mark at every step: choices in steps, a few fixed values, whole numbers with few values.
+            double max = s.maxNow();
+            int marks = s.stepKeys != null ? s.stepKeys.length : s.steps != null ? s.steps.length <= 9 ? s.steps.length : 0
+                    : s.integer && max - s.min <= 8 ? (int) (max - s.min) + 1 : 0;
             if (marks > 1) {
                 for (int i = 0; i < marks; i++) {
                     float sx = Math.round(tx + tw * i / (marks - 1f));
@@ -456,6 +480,7 @@ public final class ConfigScreen extends Screen {
         @Override
         void release() {
             if (s.onRelease != null) s.onRelease.run();
+            changed();
         }
 
         @Override
@@ -519,6 +544,7 @@ public final class ConfigScreen extends Screen {
             int cur = Math.max(0, options.indexOf(get.get()));
             int i = (cur + (mx < bx + bw / 2 ? -1 : 1) + options.size()) % options.size();
             set.accept(options.get(i));
+            changed();
             return true;
         }
     }
@@ -697,49 +723,95 @@ public final class ConfigScreen extends Screen {
         else tip.show(at, at.label, at.tooltip, mx, at.y, at.y + at.height(), width, Grid.MARGIN, footerY() - Grid.GAP);
     }
 
-    /** Where the pictures start under the name and description: below the longest description of the screen. */
-    private float descriptionRoom;
-    private String roomKey;
+    private float roomW, roomH;
+    private String roomLanguage;
 
-    private float descriptionRoom(float textW) {
-        String key = Minecraft.getInstance().getLanguageManager().getSelected() + "/" + (int) textW;
-        if (!key.equals(roomKey)) {
-            roomKey = key;
-            int most = 0;
-            for (List<Row> tab : tabs) {
-                for (Row r : tab) if (r.tooltip != null) most = Math.max(most, font.split(r.tooltip, (int) textW).size());
-            }
-            descriptionRoom = Grid.ROW + most * DrawText.LINE + Grid.PAD;
+    /**
+     * Height of the longest description (name, line and text) among the rows with pictures of every tab, {@code w}
+     * wide: the pictures start at the same place for every setting, whatever the length of its own text.
+     */
+    private float descriptionRoom(float w) {
+        String language = Minecraft.getInstance().options.languageCode;
+        if (language.equals(roomLanguage) && w == roomW) return roomH;
+        int most = 0;
+        for (List<Row> tab : tabs) {
+            for (Row r : tab) if (r.tooltip != null && r.preview != null) most = Math.max(most, font.split(r.tooltip, (int) w).size());
         }
-        return descriptionRoom;
+        roomLanguage = language;
+        roomW = w;
+        roomH = DrawText.LINE + 2 * Grid.GAP + 1 + most * (DrawText.LINE + 2) - 2;
+        return roomH;
     }
 
+    /** The area of the card's pictures: x, y, w, h (the whole room under the description, without the caption). */
+    private float cardInnerX() {
+        return cardX + Grid.PAD;
+    }
+
+    private float cardInnerY() {
+        return panelY + Grid.HEADER_H + Grid.PAD;
+    }
+
+    private float cardInnerW() {
+        return cardW - 2 * Grid.PAD;
+    }
+
+    private float cardInnerH() {
+        return panelH - Grid.HEADER_H - 2 * Grid.PAD;
+    }
+
+    /**
+     * The card: a dark panel with its title, then for the setting pointed at its name and description, its pictures
+     * under them (a caption with its value under a picture that has none of its own); with none pointed at, a line
+     * asking for one.
+     */
     private void renderCard(GuiGraphics g, int mx, int my, float pt) {
         float x = cardX, y = panelY, w = cardW, h = panelH;
         Draw.rect(g, x, y, x + w, y + h, Theme.PANEL_DARK);
-        float tx = x + 2 * Grid.PAD, tw = w - 4 * Grid.PAD, ty = y + 2 * Grid.PAD;
-        if (pointed == null) {
-            Component none = Component.translatable("aacs.preview.none");
-            DrawText.textCentered(g, Component.literal(DrawText.fit(none.getString(), (int) tw)), x + w / 2, y + h / 2 - 4, Theme.TEXT_MUTED, false);
+        Draw.rect(g, x, y, x + w, y + Grid.HEADER_H, Theme.PANEL_DARK_HEADER);
+        Draw.rect(g, x, y + Grid.HEADER_H - 1, x + w, y + Grid.HEADER_H, Theme.PANEL_HEADER_LINE);
+        DrawText.room(spec.cardTitle, w - 2 * Grid.PAD);
+        DrawText.text(g, spec.cardTitle, x + Grid.PAD, DrawText.textY(y, Grid.HEADER_H), Theme.GOLD, false);
+        float cx = cardInnerX(), cy = cardInnerY(), cw = cardInnerW(), ch = cardInnerH();
+        Row row = pointed;
+        if (row == null || row.tooltip == null) {
+            cardLines(g, cx, cy, cw, ch, spec.cardPrompt);
             return;
         }
-        DrawText.text(g, DrawText.fit(pointed.label.getString(), (int) tw), tx, ty, Theme.GOLD, false);
-        float ly = ty + Grid.ROW;
-        for (var line : font.split(pointed.tooltip, (int) tw)) {
-            g.drawString(font, line, Math.round(tx), Math.round(ly), Theme.CREAM, false);
-            ly += DrawText.LINE;
+        // The description at the top: the name in gold over a line, the text wrapped under it.
+        DrawText.text(g, DrawText.fit(row.label.getString(), (int) cw), cx, cy, Theme.GOLD, false);
+        Draw.rect(g, cx, cy + DrawText.LINE + Grid.GAP, cx + cw, cy + DrawText.LINE + Grid.GAP + 1, Theme.PANEL_LINE);
+        float ty = cy + DrawText.LINE + 2 * Grid.GAP + 1;
+        for (FormattedCharSequence l : font.split(row.tooltip, (int) cw)) {
+            g.pose().pushPose();
+            g.pose().translate(Draw.snap(cx), Draw.snap(ty), 0);
+            g.drawString(font, l, 0, 0, Theme.CREAM, false);
+            g.pose().popPose();
+            ty += DrawText.LINE + 2;
         }
-        String value = pointed.valueText();
-        float picTop = ty + descriptionRoom(tw), captionH = value != null ? Grid.ROW : 0;
-        float picH = y + h - 2 * Grid.PAD - captionH - picTop;
-        if (pointed.preview != null && picH > Grid.ROW) {
-            g.enableScissor((int) tx, (int) picTop, (int) (tx + tw), (int) (picTop + picH));
-            pointed.preview.draw(g, tx, picTop, tw, picH, pt);
-            g.disableScissor();
+        if (row.preview == null) return;
+        // The pictures under it, from where the longest description of all ends: the same place and size for every
+        // setting, whatever the length of its own text.
+        float top = Draw.snap(cy + descriptionRoom(cw) + Grid.PAD);
+        boolean caption = row.preview.caption(row.langKey);
+        float captionH = caption ? DrawText.LINE + Grid.GAP : 0;
+        float vh = Draw.snap(cy + ch - top - captionH);
+        g.enableScissor((int) cx, (int) top, (int) (cx + cw), (int) (top + vh)); // nothing spills out of the area
+        row.preview.draw(g, row.langKey, cx, top, cw, vh, pt);
+        g.disableScissor();
+        if (caption) {
+            String text = row.label.getString() + (row.valueText() == null ? "" : ": " + row.valueText());
+            DrawText.room(text, cw);
+            DrawText.textCentered(g, Component.literal(DrawText.fit(text, (int) cw)), Draw.snap(cx + cw / 2f), top + vh + Grid.GAP, Theme.CREAM, false);
         }
-        if (value != null) {
-            Component caption = Component.literal(DrawText.fit(pointed.label.getString() + ": " + value, (int) tw));
-            DrawText.textCentered(g, caption, x + w / 2, DrawText.textY(y + h - 2 * Grid.PAD - Grid.ROW, Grid.ROW), Theme.TEXT_MUTED, false);
+    }
+
+    /** Lines of muted text in the middle of the area, each shortened to fit. */
+    private static void cardLines(GuiGraphics g, float x, float y, float w, float h, List<Component> lines) {
+        float top = y + (h - lines.size() * (DrawText.LINE + 2) + 2) / 2f;
+        for (int i = 0; i < lines.size(); i++) {
+            Component t = Component.literal(DrawText.fit(lines.get(i).getString(), (int) w));
+            DrawText.textCentered(g, t, Draw.snap(x + w / 2f), Draw.snap(top + i * (DrawText.LINE + 2)), Theme.TEXT_MUTED, false);
         }
     }
 
@@ -760,7 +832,7 @@ public final class ConfigScreen extends Screen {
             mx = testPointer[0];
             my = testPointer[1];
         }
-        Theme.use(spec.palette, !spec.rounded.getAsBoolean());
+        Theme.use(spec.palette.get(), !spec.rounded.getAsBoolean());
         Cursors.begin();
         renderBackground(g, mx, my, pt);
         layout();
@@ -776,7 +848,7 @@ public final class ConfigScreen extends Screen {
         }
         Draw.rect(g, 0, 0, width, height, Theme.SETTINGS_DIM);
         // The card's picture is prepared before anything is clipped (it may draw into a layer of its own).
-        if (card && pointed != null && pointed.preview != null) pointed.preview.prepare(cardW - 4 * Grid.PAD, panelH, pt);
+        if (card && pointed != null && pointed.preview != null) pointed.preview.prepare(g, pointed.langKey, cardInnerW(), cardInnerH(), pt);
         Ui.panel(g, panelX, panelY, panelW, panelH, title, titleIcon, mx, my);
         if (card) Backdrop.draw(g, cardX, panelY, cardX + cardW, panelY + panelH);
         Backdrop.release();

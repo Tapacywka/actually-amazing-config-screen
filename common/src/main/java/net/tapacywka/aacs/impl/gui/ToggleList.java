@@ -41,10 +41,14 @@ final class ToggleList {
     // Where the list was drawn last (for the mouse).
     private float x, y, w, h;
 
-    ToggleList(List<AacsScreen.ListEntry> entries, ListValue off, Runnable onClosed) {
+    /** The lang key of the row it opens under: the mod's own texts ({@code <key>.find}, {@code .count}, {@code .none}) first. */
+    private final String rowKey;
+
+    ToggleList(String rowKey, List<AacsScreen.ListEntry> entries, ListValue off, Runnable onClosed) {
+        this.rowKey = rowKey;
         this.off = off;
         this.onClosed = onClosed;
-        Component hint = Component.translatable("aacs.list.find");
+        Component hint = text("find");
         field = new ChipField(ChipField.Style.DARK, Icon.SEARCH, hint, hint, 32);
         field.setResponder(s -> {
             filter = s.toLowerCase(Locale.ROOT).trim();
@@ -91,11 +95,11 @@ final class ToggleList {
         int on = 0;
         for (Entry e : all) if (on(e)) on++;
         if (!field.focused()) {
-            DrawText.textRight(g, Component.translatable("aacs.list.count", on, all.size()), x + w - 2 * Grid.GAP, DrawText.textY(fy, Grid.CHIP_H), Theme.TEXT_MUTED, false);
+            DrawText.textRight(g, text("count", on, all.size()), x + w - 2 * Grid.GAP, DrawText.textY(fy, Grid.CHIP_H), Theme.TEXT_MUTED, false);
         }
         float top = listTop(), view = viewH(), s = scroller.update(shown.size() * ITEM_H - view);
         if (shown.isEmpty()) {
-            DrawText.text(g, Component.translatable("aacs.list.none"), x + 2 * Grid.GAP, DrawText.textY(top, ITEM_H), Theme.TEXT_MUTED, false);
+            DrawText.text(g, text("none"), x + 2 * Grid.GAP, DrawText.textY(top, ITEM_H), Theme.TEXT_MUTED, false);
         }
         EdgeFade.capture(g);
         g.enableScissor((int) x, (int) top, (int) (x + w), (int) Math.ceil(top + view));
@@ -219,5 +223,11 @@ final class ToggleList {
         field.blur();
         if (changed && onClosed != null) onClosed.run();
         changed = false;
+    }
+
+    /** A text of the list: the mod's for its row when it has one, else the library's. */
+    private Component text(String part, Object... args) {
+        String own = rowKey + "." + part;
+        return Component.translatable(net.minecraft.client.resources.language.I18n.exists(own) ? own : "aacs.list." + part, args);
     }
 }
