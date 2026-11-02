@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://modrinth.com/mod/actually-amazing-config-screen"><img src="https://img.shields.io/modrinth/dt/actually-amazing-config-screen?style=flat&logo=modrinth&label=modrinth&color=00AF5C" alt="Modrinth downloads"></a>
-  <a href="https://www.curseforge.com/minecraft/mc-mods/actually-amazing-config-screen"><img src="https://img.shields.io/badge/curseforge-library-F16436?style=flat&logo=curseforge" alt="CurseForge"></a>
+  <a href="https://www.curseforge.com/minecraft/mc-mods/actually-amazing-config-screen"><img src="https://img.shields.io/curseforge/dt/1779712?style=flat&logo=curseforge&label=curseforge&color=F16436" alt="CurseForge downloads"></a>
   <a href="https://github.com/Tapacywka/actually-amazing-config-screen/releases"><img src="https://img.shields.io/github/v/release/Tapacywka/actually-amazing-config-screen?include_prereleases&style=flat&label=release&color=E6B85C" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/minecraft-1.21.1-5B8DEF?style=flat" alt="Minecraft 1.21.1">
   <a href="https://github.com/Tapacywka/actually-amazing-config-screen/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-8A8F98?style=flat" alt="MIT license"></a>

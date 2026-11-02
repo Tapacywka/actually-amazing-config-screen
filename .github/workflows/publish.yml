@@ -44,7 +44,7 @@ concurrency:
 
 env:
   MODRINTH_PROJECT: actually-amazing-config-screen
-  CURSEFORGE_PROJECT: 'CURSEFORGE_ID'
+  CURSEFORGE_PROJECT: '1779712'
   USER_AGENT: Tapacywka/actually-amazing-config-screen (publish workflow)
   # Both files on a release; one of them when run by hand (to finish an upload refused for one).
   LOADERS: ${{ inputs.loaders == 'fabric' && 'fabric' || inputs.loaders == 'neoforge' && 'neoforge' || 'fabric neoforge' }}
