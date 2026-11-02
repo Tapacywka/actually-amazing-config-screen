@@ -7,8 +7,7 @@
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
-    "client": ["net.tapacywka.aacs.testmod.AacsTestModFabric"],
-    "modmenu": ["net.tapacywka.aacs.testmod.AacsTestModFabric"]
+    "client": ["net.tapacywka.aacs.testmod.AacsTestModFabric"]
   },
   "depends": {
     "aacs": "*",

@@ -1,24 +1,18 @@
 package net.tapacywka.aacs.testmod;
 
-import com.terraformersmc.modmenu.api.ConfigScreenFactory;
-import com.terraformersmc.modmenu.api.ModMenuApi;
+import com.terraformersmc.modmenu.ModMenu;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.tapacywka.aacs.api.AacsScreen;
 
-/** Development only: the test screen of {@link TestScreen}, opened from Mod Menu. */
-public final class AacsTestModFabric implements ClientModInitializer, ModMenuApi {
-    private static AacsScreen screen;
-
+/** Development only: the test screen of {@link TestScreen}; its button in Mod Menu comes from the library. */
+public final class AacsTestModFabric implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        screen = TestScreen.make(FabricLoader.getInstance().getConfigDir());
-        if (Boolean.getBoolean("aacs.shots")) ClientTickEvents.END_CLIENT_TICK.register(mc -> TestScreen.tick(screen, "fabric"));
-    }
-
-    @Override
-    public ConfigScreenFactory<?> getModConfigScreenFactory() {
-        return parent -> screen.open(parent);
+        TestScreen.make(FabricLoader.getInstance().getConfigDir());
+        // The shots open the screen as Mod Menu's button does.
+        if (Boolean.getBoolean("aacs.shots")) {
+            ClientTickEvents.END_CLIENT_TICK.register(mc -> TestScreen.tick(parent -> ModMenu.getConfigScreen("aacs_testmod", parent), "fabric"));
+        }
     }
 }

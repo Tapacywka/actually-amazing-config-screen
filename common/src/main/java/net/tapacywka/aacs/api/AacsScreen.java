@@ -4,6 +4,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.tapacywka.aacs.impl.ModListScreens;
 import net.tapacywka.aacs.impl.gui.ConfigScreen;
 
 import java.util.ArrayList;
@@ -77,6 +78,7 @@ public final class AacsScreen {
         private final List<Button> buttons = new ArrayList<>();
         private Runnable onReset = () -> {};
         private final List<Tab> tabs = new ArrayList<>();
+        private boolean modList = true;
 
         private Builder(String modId, ConfigFile file) {
             this.modId = modId;
@@ -129,9 +131,20 @@ public final class AacsScreen {
             return this;
         }
 
+        /**
+         * Whether the screen opens from the mod's settings button in Mod Menu (Fabric) and in the mod list of NeoForge;
+         * on by default. A screen the mod registers there itself always wins.
+         */
+        public Builder modList(boolean modList) {
+            this.modList = modList;
+            return this;
+        }
+
         public AacsScreen build() {
             if (tabs.isEmpty()) throw new IllegalStateException("a settings screen without tabs");
-            return new AacsScreen(this);
+            AacsScreen screen = new AacsScreen(this);
+            if (modList) ModListScreens.add(screen);
+            return screen;
         }
     }
 

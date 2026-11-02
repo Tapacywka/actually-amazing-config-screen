@@ -103,11 +103,14 @@ public final class TestScreen {
 
     private static int tick = -1, step;
 
-    public static void tick(AacsScreen screen, String prefix) {
+    /** One step of the shots each client tick; {@code open} opens the screen as the mod list's button does. */
+    public static void tick(java.util.function.UnaryOperator<net.minecraft.client.gui.screens.Screen> open, String prefix) {
         Minecraft mc = Minecraft.getInstance();
         if (tick < 0) {
             if (!(mc.screen instanceof TitleScreen)) return;
-            mc.setScreen(screen.open(mc.screen));
+            var opened = open.apply(mc.screen);
+            if (opened == null) throw new IllegalStateException("no settings screen in the mod list");
+            mc.setScreen(opened);
             tick = 0;
         }
         if (++tick % 40 != 0) return;

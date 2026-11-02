@@ -8,7 +8,8 @@
   "license": "${mod_license}",
   "environment": "*",
   "entrypoints": {
-    "main": ["net.tapacywka.aacs.fabric.AacsFabric"]
+    "main": ["net.tapacywka.aacs.fabric.AacsFabric"],
+    "modmenu": ["net.tapacywka.aacs.fabric.AacsModMenu"]
   },
   "depends": {
     "fabricloader": ">=0.16.0",

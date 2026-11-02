@@ -7,14 +7,16 @@ import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
-import net.tapacywka.aacs.api.AacsScreen;
 
-/** Development only: the test screen of {@link TestScreen}, opened from the mod list. */
+/** Development only: the test screen of {@link TestScreen}; its button in the mod list comes from the library. */
 @Mod(value = "aacs_testmod", dist = Dist.CLIENT)
 public final class AacsTestMod {
     public AacsTestMod(ModContainer container) {
-        AacsScreen screen = TestScreen.make(FMLPaths.CONFIGDIR.get());
-        container.registerExtensionPoint(IConfigScreenFactory.class, (c, parent) -> screen.open(parent));
-        if (Boolean.getBoolean("aacs.shots")) NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post e) -> TestScreen.tick(screen, "neoforge"));
+        TestScreen.make(FMLPaths.CONFIGDIR.get());
+        // The shots open the screen as the mod list's button does.
+        if (Boolean.getBoolean("aacs.shots")) {
+            NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post e) -> TestScreen.tick(parent -> IConfigScreenFactory.getForMod(container.getModInfo())
+                    .map(f -> f.createScreen(container, parent)).orElse(null), "neoforge"));
+        }
     }
 }
