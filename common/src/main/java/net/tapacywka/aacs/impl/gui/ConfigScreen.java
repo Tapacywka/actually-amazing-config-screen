@@ -691,16 +691,21 @@ public final class ConfigScreen extends Screen {
 
     /** The row under the pointer; kept while the pointer is right of the list (its bar, the gap, the card). */
     private void followPointer(int mx, int my) {
-        boolean overList = my >= listTop && my < listBottom && mx >= contentX() && mx < contentX() + contentW()
-                && (openList == null || !openList.over(mx, my));
-        if (overList) {
-            pointed = null;
-            for (Row r : rows) {
-                if (r.tooltip != null && inView(r) && my >= r.y && my < r.y + r.height()) pointed = r;
-            }
-        } else if (!(mx >= contentX() + contentW() && my >= panelY && my < panelY + panelH)) {
-            pointed = null;
+        if (draggingRow != null) {
+            pointed = draggingRow;
+            return;
         }
+        if (mx >= contentX() + contentW()) return; // right of the list (to the card): the row stays
+        // Over the open list: the row it opened under (not the rows hidden under the list).
+        if (openList != null && openList.over(mx, my)) {
+            pointed = openRow;
+            return;
+        }
+        Row at = null;
+        if (my >= listTop && my < listBottom && mx >= contentX()) {
+            for (Row r : rows) if (r.tooltip != null && inView(r) && my >= r.y && my < r.y + r.height()) at = r;
+        }
+        pointed = at;
     }
 
     /**
