@@ -9,6 +9,8 @@ on Fabric.
 
 ## [Unreleased]
 
+## [0.1.0-beta.2] - 2026-11-02
+
 ### Added
 - Minecraft 26.1.2, 26.2 and 26.3, on Fabric and NeoForge. For mod authors the API is the same, with the names 26.x
   uses: pictures and backgrounds draw on `GuiGraphicsExtractor`, icons are an `Identifier`.
@@ -36,5 +38,6 @@ on Fabric.
 - Sub-sections from other mods: a mod opens a tab to them, and another mod adds its own sub-section there with its
   own settings, shown by name after the tab's own rows (optionally only while a condition holds).
 
-[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v0.1.0-beta.1...HEAD
+[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v0.1.0-beta.2...HEAD
+[0.1.0-beta.2]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v0.1.0-beta.1...v0.1.0-beta.2
 [0.1.0-beta.1]: https://github.com/Tapacywka/actually-amazing-config-screen/releases/tag/v0.1.0-beta.1

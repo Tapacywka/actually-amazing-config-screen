@@ -77,11 +77,12 @@ repositories {
 }
 
 dependencies {
+    // The game after +mc: 1.21.1, 26.1.2, 26.2 or 26.3 (on 26.x Loom takes implementation, not modImplementation)
     // Fabric (Loom)
-    modImplementation 'maven.modrinth:actually-amazing-config-screen:0.1.0-beta.1+mc1.21.1-fabric'
-    include 'maven.modrinth:actually-amazing-config-screen:0.1.0-beta.1+mc1.21.1-fabric'
+    modImplementation 'maven.modrinth:actually-amazing-config-screen:0.1.0-beta.2+mc1.21.1-fabric'
+    include 'maven.modrinth:actually-amazing-config-screen:0.1.0-beta.2+mc1.21.1-fabric'
     // NeoForge (ModDevGradle)
-    jarJar(implementation('maven.modrinth:actually-amazing-config-screen:0.1.0-beta.1+mc1.21.1-neoforge'))
+    jarJar(implementation('maven.modrinth:actually-amazing-config-screen:0.1.0-beta.2+mc1.21.1-neoforge'))
 }
 ```
 
@@ -123,7 +124,7 @@ AacsScreen.extend("mymod", "compatibility", "othermod", otherFile, t -> t.toggle
 
 * Minecraft 1.21.1, Fabric (Fabric Loader 0.16 or newer, no Fabric API needed) and NeoForge 21.1.
 * The Fabric file also runs on NeoForge through Sinytra Connector.
-* Minecraft 26.1.2, 26.2 and 26.3: planned.
+* Minecraft 26.1.2, 26.2 and 26.3 (Java 25), Fabric and NeoForge.
 
 ## Building
 
