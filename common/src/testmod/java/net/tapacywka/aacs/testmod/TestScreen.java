@@ -54,6 +54,15 @@ public final class TestScreen {
         file.load(configDir.resolve("aacs_testmod-client.json"));
 
         String k = "aacs_testmod.config.";
+        // Two sub-sections another mod would add to the Extra tab (registered Zeta first: shown by name), over a file of
+        // their own, and one added to a tab that is not open (only a line in the log).
+        ConfigFile.Builder eb = ConfigFile.builder();
+        BoolValue alpha = eb.bool("alpha", true), zeta = eb.bool("zeta", false);
+        ConfigFile added = eb.build();
+        added.load(configDir.resolve("aacs_testmod-added.json"));
+        AacsScreen.extend("aacs_testmod", "extras", "aacs_testmod", added, t -> t.toggle(k + "added.zeta", zeta)).title(k + "added.zeta_part");
+        AacsScreen.extend("aacs_testmod", "extras", "aacs_testmod", added, t -> t.toggle(k + "added.alpha", alpha)).title(k + "added.alpha_part");
+        AacsScreen.extend("aacs_testmod", "closed", "aacs_testmod", added, t -> t.toggle(k + "added.alpha", alpha));
         return AacsScreen.builder("aacs_testmod", file)
                 .rounded(() -> rounded)
                 .tab(k + "tab.display", t -> {
@@ -82,7 +91,7 @@ public final class TestScreen {
                     t.subSection(k + "sub.details").toggle(A).toggle(B);
                 })
                 .tab(k + "tab.extra", t -> {
-                    t.section(k + "section.more");
+                    t.openTo("extras").section(k + "section.more");
                     for (BoolValue v : MORE) t.toggle(k + "more.n", v);
                 })
                 .build();
@@ -161,6 +170,20 @@ public final class TestScreen {
             }
             case 15 -> ConfigScreen.testPointer = at(mc, 4);
             case 16 -> shot(mc, prefix + "_narrow");
+            case 17 -> {
+                // The Extra tab scrolled to its end: the two sub-sections another mod added, by name.
+                ConfigScreen.testPointer = null;
+                org.lwjgl.glfw.GLFW.glfwSetWindowSize(mc.getWindow().getWindow(), 1920, mc.getWindow().getHeight());
+            }
+            case 18 -> {
+                int x = (int) contentRight(mc.screen.width) - 60, y = 8 + 28 + 4 + 10;
+                mc.screen.mouseClicked(x, y, 0);
+                mc.screen.mouseReleased(x, y, 0);
+            }
+            case 19 -> {
+                for (int i = 0; i < 40; i++) mc.screen.mouseScrolled(contentRight(mc.screen.width) - 60, mc.screen.height / 2.0, 0, -1);
+            }
+            case 20 -> shot(mc, prefix + "_extension");
             default -> {
                 OPACITY.reset();
                 mc.stop();

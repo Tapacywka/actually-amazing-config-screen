@@ -27,3 +27,5 @@ on Fabric.
 - The mod's own colours (every colour of the screen), shapes (rectangular or rounded), background, title icon and
   buttons left of Reset and Done.
 - The settings button of the mod in Mod Menu and in the mod list of NeoForge, for every screen built.
+- Sub-sections from other mods: a mod opens a tab to them, and another mod adds its own sub-section there with its
+  own settings, shown by name after the tab's own rows (optionally only while a condition holds).

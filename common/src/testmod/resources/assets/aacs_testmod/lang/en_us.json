@@ -31,5 +31,11 @@
   "aacs_testmod.config.look.flowers": "Flowers",
   "aacs_testmod.config.look.flowers.tooltip": "A switch with a list under it.",
   "aacs_testmod.config.more.n": "Row %s",
-  "aacs_testmod.config.more.n.tooltip": "Rows to scroll through."
+  "aacs_testmod.config.more.n.tooltip": "Rows to scroll through.",
+  "aacs_testmod.config.added.alpha_part": "Alpha Mod",
+  "aacs_testmod.config.added.zeta_part": "Zeta Mod",
+  "aacs_testmod.config.added.alpha": "Alpha setting",
+  "aacs_testmod.config.added.alpha.tooltip": "Added to the Extra tab by another mod.",
+  "aacs_testmod.config.added.zeta": "Zeta setting",
+  "aacs_testmod.config.added.zeta.tooltip": "Also added, registered first, shown last."
 }

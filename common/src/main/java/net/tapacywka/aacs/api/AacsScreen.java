@@ -69,6 +69,60 @@ public final class AacsScreen {
         return new Builder(modId, file);
     }
 
+    /**
+     * Adds a sub-section of the mod {@code modId} to the tab the mod {@code owner} opened as {@code tab}
+     * ({@link Tab#openTo}): {@code rows} over the values of {@code file} (the adding mod's own file, written when the
+     * owner's screen closes; its Reset sets them back too), texts from {@code modId}'s lang files. Shown each time the
+     * owner's screen opens, whichever mod loaded first; a tab not open to other mods leaves it out (a line in the log).
+     */
+    public static Extension extend(String owner, String tab, String modId, ConfigFile file, Consumer<Tab> rows) {
+        Extension e = new Extension(owner, tab, modId, file, rows);
+        net.tapacywka.aacs.impl.Extensions.add(e);
+        return e;
+    }
+
+    /** A sub-section added to another mod's tab: its title and when it shows. */
+    public static final class Extension {
+        public final String owner, tab, modId;
+        public final ConfigFile file;
+        private final Consumer<Tab> rows;
+        private String titleKey;
+        private BooleanSupplier shownIf = () -> true;
+
+        private Extension(String owner, String tab, String modId, ConfigFile file, Consumer<Tab> rows) {
+            this.owner = owner;
+            this.tab = tab;
+            this.modId = modId;
+            this.file = file;
+            this.rows = rows;
+        }
+
+        /** The sub-section's title (also what keeps it open or folded); by default the mod's name as its loader shows it. */
+        public Extension title(String langKey) {
+            this.titleKey = langKey;
+            return this;
+        }
+
+        /** Shown only while this says so (another mod in the game, say). */
+        public Extension shownIf(BooleanSupplier shownIf) {
+            this.shownIf = shownIf;
+            return this;
+        }
+
+        public boolean shown() {
+            return shownIf.getAsBoolean();
+        }
+
+        /** Internal: the sub-section as rows: its heading first, then the mod's rows. */
+        public Tab build() {
+            Tab t = new Tab(modId, tab);
+            if (titleKey != null) t.subSection(titleKey);
+            else t.subSection(modId + ".config.aacs_part", Component.literal(net.tapacywka.aacs.impl.Mods.name(modId)));
+            rows.accept(t);
+            return t;
+        }
+    }
+
     /** A new settings screen; closing it saves the file and goes back to {@code parent}. */
     public Screen open(Screen parent) {
         return new ConfigScreen(this, parent);
@@ -177,6 +231,7 @@ public final class AacsScreen {
         public final List<Row> rows = new ArrayList<>();
         private String subSection;
         private Preview preview;
+        private String openTo;
 
         private Tab(String modId, String key) {
             this.modId = modId;
@@ -250,6 +305,20 @@ public final class AacsScreen {
         /** The tab's picture for rows without one of their own, or null. */
         public Preview preview() {
             return preview;
+        }
+
+        /**
+         * Opens the tab to other mods under {@code name} ("compatibility"): their sub-sections ({@link #extend}) come
+         * after the tab's own rows, by name.
+         */
+        public Tab openTo(String name) {
+            this.openTo = name;
+            return this;
+        }
+
+        /** The name the tab is open to other mods under, or null. */
+        public String openTo() {
+            return openTo;
         }
 
         // ---------------------------------------------------------------- switches

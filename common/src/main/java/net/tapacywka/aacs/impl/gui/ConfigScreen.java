@@ -8,6 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.tapacywka.aacs.api.AacsScreen;
 import net.tapacywka.aacs.api.Value;
+import net.tapacywka.aacs.impl.Extensions;
 import net.tapacywka.aacs.impl.gui.Ui.Grid;
 import net.tapacywka.aacs.impl.render.Backdrop;
 import net.tapacywka.aacs.impl.render.Draw;
@@ -67,8 +68,48 @@ public final class ConfigScreen extends Screen {
         this.parent = parent;
         titleIcon = spec.icon == null ? Icon.GEAR : new Icon(spec.icon);
         for (AacsScreen.Button b : spec.buttons) buttonIcons.add(b.icon() == null ? null : new Icon(b.icon()));
+        Extensions.checkAgainst(spec);
         for (AacsScreen.Tab t : spec.tabs) {
             List<Row> list = new ArrayList<>();
+            addRows(list, t);
+            // A tab open to other mods: their sub-sections after its own rows, by name (see AacsScreen.extend).
+            if (t.openTo() != null) {
+                List<AacsScreen.Tab> parts = new ArrayList<>();
+                for (AacsScreen.Extension e : Extensions.of(spec.modId, t.openTo())) {
+                    if (!e.shown()) continue;
+                    parts.add(e.build());
+                    extraFiles.add(e.file);
+                }
+                parts.sort(java.util.Comparator.comparing(ConfigScreen::partName, String.CASE_INSENSITIVE_ORDER));
+                for (AacsScreen.Tab p : parts) {
+                    int from = list.size();
+                    addRows(list, p);
+                    for (Row r : list.subList(from, list.size())) if (r.value != null) extraValues.add(r.value);
+                }
+            }
+            List<String[]> steps = new ArrayList<>();
+            for (Row r : list) if (r instanceof SliderRow sr && sr.s.stepKeys != null) steps.add(sr.s.stepKeys);
+            for (Row r : list) if (r instanceof SliderRow sr && sr.s.stepKeys != null) sr.stepGroup = steps;
+            tabs.add(list);
+        }
+        tab = Math.min(SHOWN_TAB.getOrDefault(spec.modId, 0), tabs.size() - 1);
+        rows = tabs.get(tab);
+    }
+
+    /** The title of an added sub-section (its first row), as shown. */
+    private static String partName(AacsScreen.Tab p) {
+        AacsScreen.Row head = p.rows.get(0);
+        return (head.label() != null ? head.label() : Component.translatable(head.key())).getString();
+    }
+
+    /** The files of the mods whose sub-sections this screen shows, written when it closes. */
+    private final Set<net.tapacywka.aacs.api.ConfigFile> extraFiles = new java.util.LinkedHashSet<>();
+    /** The values of those sub-sections: Reset sets them back too. */
+    private final Set<Value<?>> extraValues = new java.util.LinkedHashSet<>();
+
+    /** The rows of {@code t} after those of {@code list}; a row without a picture of its own takes {@code t}'s. */
+    private void addRows(List<Row> list, AacsScreen.Tab t) {
+        {
             SubSection owner = null;
             for (AacsScreen.Row r : t.rows) {
                 Row row = switch (r.kind()) {
@@ -90,13 +131,7 @@ public final class ConfigScreen extends Screen {
                 else row.owner = owner;
                 list.add(row);
             }
-            List<String[]> steps = new ArrayList<>();
-            for (Row r : list) if (r instanceof SliderRow sr && sr.s.stepKeys != null) steps.add(sr.s.stepKeys);
-            for (Row r : list) if (r instanceof SliderRow sr && sr.s.stepKeys != null) sr.stepGroup = steps;
-            tabs.add(list);
         }
-        tab = Math.min(SHOWN_TAB.getOrDefault(spec.modId, 0), tabs.size() - 1);
-        rows = tabs.get(tab);
     }
 
     @SuppressWarnings("unchecked")
@@ -949,6 +984,7 @@ public final class ConfigScreen extends Screen {
         int n = spec.buttons.size();
         if (Ui.actionHit(footerButtonX(n), by, bw, mx, my)) {
             for (Value<?> v : spec.file.values()) v.reset();
+            for (Value<?> v : extraValues) v.reset();
             spec.onReset.run();
             return true;
         }
@@ -1068,6 +1104,7 @@ public final class ConfigScreen extends Screen {
     @Override
     public void onClose() {
         spec.file.save();
+        for (net.tapacywka.aacs.api.ConfigFile f : extraFiles) if (f != spec.file) f.save();
         Minecraft.getInstance().setScreen(parent);
     }
 }

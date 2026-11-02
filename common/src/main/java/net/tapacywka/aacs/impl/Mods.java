@@ -9,6 +9,31 @@ public final class Mods {
 
     public static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(net.tapacywka.aacs.api.Aacs.MOD_ID);
 
+    /** The name of a mod as its loader shows it, or its id. */
+    public static String name(String id) {
+        try {
+            Object loader = Class.forName("net.fabricmc.loader.api.FabricLoader").getMethod("getInstance").invoke(null);
+            Object c = ((java.util.Optional<?>) Class.forName("net.fabricmc.loader.api.FabricLoader").getMethod("getModContainer", String.class).invoke(loader, id)).orElse(null);
+            if (c != null) {
+                Object meta = Class.forName("net.fabricmc.loader.api.ModContainer").getMethod("getMetadata").invoke(c);
+                return (String) Class.forName("net.fabricmc.loader.api.metadata.ModMetadata").getMethod("getName").invoke(meta);
+            }
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // Not Fabric.
+        }
+        try {
+            Object list = Class.forName("net.neoforged.fml.ModList").getMethod("get").invoke(null);
+            Object c = ((java.util.Optional<?>) list.getClass().getMethod("getModContainerById", String.class).invoke(list, id)).orElse(null);
+            if (c != null) {
+                Object info = Class.forName("net.neoforged.fml.ModContainer").getMethod("getModInfo").invoke(c);
+                return (String) Class.forName("net.neoforged.neoforgespi.language.IModInfo").getMethod("getDisplayName").invoke(info);
+            }
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // Not NeoForge either.
+        }
+        return id;
+    }
+
     public static boolean loaded(String id) {
         try {
             Object loader = Class.forName("net.fabricmc.loader.api.FabricLoader").getMethod("getInstance").invoke(null);

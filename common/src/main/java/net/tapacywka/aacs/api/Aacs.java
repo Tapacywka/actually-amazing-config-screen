@@ -14,5 +14,5 @@ public final class Aacs {
      * embedded in the mods of a game, so a newer one keeps every older method working; a mod built against version
      * {@code n} may check {@code API_VERSION >= n} before using what came with it.
      */
-    public static final int API_VERSION = 1;
+    public static final int API_VERSION = 2;
 }
