@@ -5,7 +5,13 @@
   "name": "${mod_name}",
   "description": "${mod_description}",
   "authors": ["${mod_authors}"],
+  "contact": {
+    "homepage": "https://github.com/Tapacywka/actually-amazing-config-screen",
+    "sources": "https://github.com/Tapacywka/actually-amazing-config-screen",
+    "issues": "https://github.com/Tapacywka/actually-amazing-config-screen/issues"
+  },
   "license": "${mod_license}",
+  "icon": "aacs.png",
   "environment": "*",
   "entrypoints": {
     "main": ["net.tapacywka.aacs.fabric.AacsFabric"],

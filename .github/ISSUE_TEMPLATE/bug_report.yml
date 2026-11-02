@@ -1,0 +1,75 @@
+name: 🐞 Bug report
+description: A settings screen made with the library does not work or looks wrong
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > [!IMPORTANT]
+        > **Before reporting, please check the [existing issues](https://github.com/Tapacywka/actually-amazing-config-screen/issues?q=is%3Aissue).** If your problem is already there, add a comment to it instead of opening a new one.
+        >
+        > The library comes inside the mods that use it. If the problem is about what a setting does (not how the screen shows it), report it to that mod.
+
+  - type: input
+    id: mod
+    attributes:
+      label: The mod whose settings you opened
+      description: Its name and version, from the mod list.
+      placeholder: Teyvat Cartographia 0.9.0-beta.1+mc1.21.1-fabric
+    validations:
+      required: true
+
+  - type: input
+    id: aacs-version
+    attributes:
+      label: Library version
+      description: Actually Amazing Config Screen in the mod list (Mod Menu shows it under libraries).
+      placeholder: 0.1.0-beta.1+mc1.21.1-fabric
+    validations:
+      required: true
+
+  - type: input
+    id: loader-version
+    attributes:
+      label: Mod loader and version
+      description: Fabric Loader and Fabric API, or NeoForge (and Sinytra Connector if a Fabric file runs on NeoForge).
+      placeholder: Fabric Loader 0.16.14 and Fabric API 0.116.17, or NeoForge 21.1.257
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the problem, and what you expected to happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or video
+      description: Drag and drop images here. Mention your GUI scale and screen resolution if the layout looks wrong.
+
+  - type: input
+    id: logs
+    attributes:
+      label: Log
+      description: A link to `logs/latest.log` (or the crash report) uploaded to [GitHub Gist](https://gist.github.com) or [mclo.gs](https://mclo.gs).
+
+  - type: textarea
+    id: mods
+    attributes:
+      label: Other mods or modpack
+      description: The modpack name and version, or the mods you think may be involved.

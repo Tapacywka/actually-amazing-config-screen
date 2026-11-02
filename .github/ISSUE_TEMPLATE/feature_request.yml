@@ -1,0 +1,29 @@
+name: 💡 Feature request
+description: A kind of row, a look, or something a mod would need from the library
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! Please look through the [existing issues](https://github.com/Tapacywka/actually-amazing-config-screen/issues?q=is%3Aissue) first: if someone already suggested it, a 👍 on that issue helps more than a new one.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do?
+      description: As a player, or as the author of a mod using the library: what is missing or getting in the way?
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How should it look or work? For an API, a short code sketch helps.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?

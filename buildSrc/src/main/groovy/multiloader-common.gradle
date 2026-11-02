@@ -32,6 +32,8 @@ repositories {
 }
 
 tasks.named('jar', Jar) {
+    // The released file: aacs-v0.1.0+mc1.21.1-fabric.jar (the Maven artifact keeps the project in its name).
+    if (project.name != 'common') archiveBaseName = mod_id
     archiveVersion = "v${project.version}"
     from(rootProject.file('LICENSE')) { rename { "LICENSE_${mod_id}" } }
 }

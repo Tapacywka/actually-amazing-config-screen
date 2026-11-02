@@ -9,6 +9,8 @@ on Fabric.
 
 ## [Unreleased]
 
+## [0.1.0-beta.1] - 2026-11-02
+
 ### Added
 - The settings file: values by sections in a JSON file of the mod (switches, whole and decimal numbers, choices,
   texts, lists). A changed value counts at once and the file is written when the screen closes. Bad values are
@@ -29,3 +31,6 @@ on Fabric.
 - The settings button of the mod in Mod Menu and in the mod list of NeoForge, for every screen built.
 - Sub-sections from other mods: a mod opens a tab to them, and another mod adds its own sub-section there with its
   own settings, shown by name after the tab's own rows (optionally only while a condition holds).
+
+[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v0.1.0-beta.1...HEAD
+[0.1.0-beta.1]: https://github.com/Tapacywka/actually-amazing-config-screen/releases/tag/v0.1.0-beta.1

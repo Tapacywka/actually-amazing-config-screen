@@ -15,6 +15,7 @@
 !/LICENSE
 !/README.md
 !/CHANGELOG.md
+!/.github/
 
 # The development games of each loader's build (run/ at the top stays ignored by the first rule).
 /fabric/run*/

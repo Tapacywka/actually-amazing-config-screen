@@ -71,6 +71,7 @@ processResources {
 
 // The released file is the remapped one, named like the plain JAR (multiloader-common).
 tasks.named('remapJar') {
+    archiveBaseName = mod_id
     archiveVersion = "v${project.version}"
 }
 

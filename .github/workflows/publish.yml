@@ -1,0 +1,193 @@
+name: Publish
+
+# Puts the JARs of a GitHub release on Modrinth and CurseForge, as Teyvat Cartographia does: every game the release has
+# files for, the oldest first, the Fabric files first, then the NeoForge ones. The game and the loader come from the file
+# name (aacs-v0.1.0+mc1.21.1-fabric.jar); each upload is named by its version number (0.1.0+mc1.21.1-fabric), client and
+# server side, nothing else to install, with the Java its game needs and the whole CHANGELOG.md as the changelog; a
+# version with -beta or -alpha goes up as a beta or an alpha.
+# Runs when a release is published; by hand for a release made before (tag), as a dry run by default: the tokens and
+# the IDs are checked and what would be uploaded is shown, nothing is uploaded.
+# Secrets: MODRINTH_TOKEN (a personal access token with Create versions), CURSEFORGE_TOKEN (an upload API token).
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (v0.1.0-beta.1)
+        required: true
+      dry_run:
+        description: Only check, upload nothing
+        type: boolean
+        default: true
+      sites:
+        description: Where to upload
+        type: choice
+        options: [both, modrinth, curseforge]
+        default: both
+      games:
+        description: Which games (all, or one such as 1.21.1)
+        default: all
+      loaders:
+        description: Which files
+        type: choice
+        options: [both, fabric, neoforge]
+        default: both
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+env:
+  MODRINTH_PROJECT: actually-amazing-config-screen
+  CURSEFORGE_PROJECT: 'CURSEFORGE_ID'
+  USER_AGENT: Tapacywka/actually-amazing-config-screen (publish workflow)
+  # Both files on a release; one of them when run by hand (to finish an upload refused for one).
+  LOADERS: ${{ inputs.loaders == 'fabric' && 'fabric' || inputs.loaders == 'neoforge' && 'neoforge' || 'fabric neoforge' }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release files and text
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          ONLY: ${{ inputs.games || 'all' }}
+        run: |
+          set -euo pipefail
+          mkdir dist
+          # The files may still be uploading when the release is published.
+          for i in 1 2 3 4 5 6; do
+            gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.jar' --dir dist --clobber || true
+            [ "$(ls dist/*.jar 2>/dev/null | wc -l)" -ge 2 ] && break
+            sleep 20
+          done
+          ls -l dist
+          [ "$(ls dist/*.jar | wc -l)" -ge 2 ] || { echo "the release has no two JARs"; exit 1; }
+          # The whole changelog, not only this version's part, as it is in the commit this runs on: the release's tag, or
+          # the branch a run by hand was started from.
+          gh api "repos/$GITHUB_REPOSITORY/contents/CHANGELOG.md?ref=$GITHUB_SHA" -H 'Accept: application/vnd.github.raw' > changelog.md
+          head -n 3 changelog.md; echo "changelog: $(wc -c < changelog.md) bytes"
+          # The version without the tag's build metadata (a tag such as v0.6.0+mc1.21.1 marks one game's commit).
+          version=${TAG#v}; version=${version%%+*}
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          # Beta and alpha versions go up as such (0.1.0-beta.1).
+          case "$version" in *-alpha*) type=alpha ;; *-beta*) type=beta ;; *) type=release ;; esac
+          echo "RELEASE_TYPE=$type" >> "$GITHUB_ENV"
+          # The games of the release's files, the oldest first.
+          games=$(ls dist/*.jar | sed -nE "s/.*aacs-v$version\+mc(.+)-(fabric|neoforge)\.jar$/\1/p" | sort -uV | tr '\n' ' ')
+          if [ "$ONLY" != all ]; then
+            grep -qw -- "$ONLY" <<< "$games" || { echo "the release has no files for $ONLY (only: $games)"; exit 1; }
+            games=$ONLY
+          fi
+          [ -n "${games// /}" ] || { echo "no file of version $version"; exit 1; }
+          echo "games: $games"
+          echo "GAMES=$games" >> "$GITHUB_ENV"
+
+      - name: Modrinth
+        if: ${{ github.event_name == 'release' || inputs.sites != 'curseforge' }}
+        env:
+          TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          api=https://api.modrinth.com/v2
+          code=$(curl -s -o project.json -w '%{http_code}' -H "Authorization: $TOKEN" -H "User-Agent: $USER_AGENT" "$api/project/$MODRINTH_PROJECT")
+          if [ "$code" != 200 ]; then
+            # 401: the token is not accepted; 404: no such project, or one not public yet and a token without Read projects.
+            echo "Modrinth: the project $MODRINTH_PROJECT cannot be read with this token (HTTP $code)"
+            echo "Modrinth: the token alone: HTTP $(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: $TOKEN" -H "User-Agent: $USER_AGENT" "$api/user")"
+            exit 1
+          fi
+          project=$(cat project.json)
+          id=$(jq -r .id <<< "$project")
+          echo "Modrinth project $MODRINTH_PROJECT: id $id, status $(jq -r .status <<< "$project")"
+          # The versions there already (none uploaded twice); without Read versions a project not public yet lists none.
+          echo "Modrinth: $(jq '.versions | length' <<< "$project") versions in the project"
+          code=$(curl -s -o versions.json -w '%{http_code}' -H "Authorization: $TOKEN" -H "User-Agent: $USER_AGENT" "$api/project/$id/version")
+          if [ "$code" = 200 ]; then
+            existing=$(jq -r '.[].version_number' versions.json)
+            echo "Modrinth: versions there: $(tr '\n' ' ' <<< "$existing")"
+          else
+            # Only a run by hand can repeat a release's upload: then give the token Read versions to be safe.
+            echo "Modrinth: the versions cannot be listed (HTTP $code), not checked for repeats"
+            existing=''
+          fi
+          for loader in $LOADERS; do
+            for game in $GAMES; do
+              number="$VERSION+mc$game-$loader"
+              jar="dist/aacs-v$number.jar"
+              if [ ! -f "$jar" ]; then echo "Modrinth: no $jar in the release"; continue; fi
+              if grep -qxF "$number" <<< "$existing"; then echo "Modrinth: $number is there already"; continue; fi
+              deps='[]' # nothing to install with it
+              data=$(jq -n --arg id "$id" --arg number "$number" --arg name "$number" --rawfile changelog changelog.md \
+                --arg loader "$loader" --arg game "$game" --argjson deps "$deps" --arg type "$RELEASE_TYPE" \
+                '{project_id: $id, version_number: $number, name: $name, changelog: $changelog, dependencies: $deps,
+                  game_versions: [$game], version_type: $type, loaders: [$loader], featured: true,
+                  file_parts: ["file"], primary_file: "file"}')
+              echo "Modrinth: $number from $jar"
+              jq 'del(.changelog)' <<< "$data"
+              if [ "$DRY_RUN" = true ]; then continue; fi
+              # From a file: in a form field's value curl takes ";" as the start of its own options (the changelog has some).
+              printf '%s' "$data" > data.json
+              code=$(curl -s -o response.json -w '%{http_code}' -X POST "$api/version" -H "Authorization: $TOKEN" -H "User-Agent: $USER_AGENT" \
+                -F "data=<data.json;type=application/json" -F "file=@$jar;type=application/java-archive")
+              if [ "$code" != 200 ]; then echo "Modrinth: upload refused (HTTP $code)"; cat response.json; echo; exit 1; fi
+              jq '{id, version_number, name}' response.json
+            done
+          done
+
+      - name: CurseForge
+        if: ${{ !cancelled() && (github.event_name == 'release' || inputs.sites != 'modrinth') }}
+        env:
+          TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          api=https://minecraft.curseforge.com/api
+          types=$(curl -sf -H "X-Api-Token: $TOKEN" "$api/game/version-types") \
+            || { echo "CurseForge: the token is not accepted"; exit 1; }
+          versions=$(curl -sf -H "X-Api-Token: $TOKEN" "$api/game/versions")
+          # A version's ID by its name and the slug of its type (minecraft-1-21, modloader, environment, java).
+          pick() {
+            jq -r --arg name "$1" --arg type "$2" --argjson types "$types" \
+              '[.[] | . as $v | select($v.name == $name and (([$types[] | select(.id == $v.gameVersionTypeID) | .slug][0] // "") | startswith($type)))][0].id // empty' \
+              <<< "$versions"
+          }
+          client=$(pick Client environment); server=$(pick Server environment); fabric=$(pick Fabric modloader); neoforge=$(pick NeoForge modloader)
+          # The IDs of every game first, so that a missing one stops the run before any upload.
+          declare -A gameIds javaIds
+          for game in $GAMES; do
+            # The Java the game needs, as CurseForge names it.
+            case "$game" in 1.*) javaName="Java 21" ;; *) javaName="Java 25" ;; esac
+            gameIds[$game]=$(pick "$game" minecraft-); javaIds[$game]=$(pick "$javaName" java)
+            echo "CurseForge IDs: Minecraft $game ${gameIds[$game]}, Client $client, $javaName ${javaIds[$game]}, Fabric $fabric, NeoForge $neoforge"
+            for x in "${gameIds[$game]}" "$client" "$server" "${javaIds[$game]}" "$fabric" "$neoforge"; do [ -n "$x" ] || { echo "CurseForge: a game version was not found"; exit 1; }; done
+          done
+          for loader in $LOADERS; do
+            for game in $GAMES; do
+              gameId=${gameIds[$game]}; java=${javaIds[$game]}
+              number="$VERSION+mc$game-$loader"
+              jar="dist/aacs-v$number.jar"
+              if [ ! -f "$jar" ]; then echo "CurseForge: no $jar in the release"; continue; fi
+              if [ "$loader" = fabric ]; then ids="[$gameId, $client, $server, $java, $fabric]"; else ids="[$gameId, $client, $server, $java, $neoforge]"; fi
+              relations=null
+              metadata=$(jq -n --arg name "$number" --rawfile changelog changelog.md --argjson ids "$ids" --argjson relations "$relations" \
+                --arg type "$RELEASE_TYPE" \
+                '{changelog: $changelog, changelogType: "markdown", displayName: $name, gameVersions: $ids,
+                  releaseType: $type} + (if $relations == null then {} else {relations: $relations} end)')
+              echo "CurseForge: $number from $jar"
+              jq 'del(.changelog)' <<< "$metadata"
+              if [ "$DRY_RUN" = true ]; then continue; fi
+              printf '%s' "$metadata" > metadata.json
+              code=$(curl -s -o response.json -w '%{http_code}' -X POST "$api/projects/$CURSEFORGE_PROJECT/upload-file" -H "X-Api-Token: $TOKEN" \
+                -F "metadata=<metadata.json" -F "file=@$jar")
+              if [ "$code" != 200 ]; then echo "CurseForge: upload refused (HTTP $code)"; cat response.json; echo; exit 1; fi
+              echo "CurseForge: uploaded, file $(cat response.json)"
+            done
+          done
