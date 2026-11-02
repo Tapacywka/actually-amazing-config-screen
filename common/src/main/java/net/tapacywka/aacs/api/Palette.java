@@ -43,6 +43,8 @@ public final class Palette {
         d.put("toggle_outline_hover", 0xFFFFFFFF);
         d.put("toggle_off_cross", 0xFFB79A62);
         d.put("slider_tick", 0xFF8D7A55);
+        d.put("tooltip", 0xFA202833);
+        d.put("tooltip_outline", 0x50ECE5D8);
         d.put("cursor", 0xFFECE5D8);
         d.put("cursor_outline", 0xFF1B2029);
         DEFAULTS = Collections.unmodifiableMap(d);

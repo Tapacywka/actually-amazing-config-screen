@@ -122,4 +122,15 @@ public final class Ui {
     public static boolean toggleHit(float x, float y, double mx, double my) {
         return Draw.inRect(mx, my, x - 2, y - 2, Grid.TOGGLE_W + 4, Grid.TOGGLE_H + 4);
     }
+
+    /** The box of a tooltip: near opaque, a faint outline one unit inside in the rectangular style. */
+    public static void tooltipBox(GuiGraphics g, float x, float y, float w, float h) {
+        if (Theme.Style.squareUi) {
+            Draw.rect(g, x, y, x + w, y + h, Theme.TOOLTIP);
+            Draw.frame(g, x + 1, y + 1, w - 2, h - 2, 1, Theme.TOOLTIP_OUTLINE);
+        } else {
+            Draw.roundRect(g, x, y, w, h, 3, Theme.TOOLTIP);
+            Draw.roundRectOutline(g, x, y, w, h, 3, 1f, Theme.TOOLTIP_OUTLINE);
+        }
+    }
 }

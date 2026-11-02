@@ -14,7 +14,7 @@ public final class Theme {
     public static int SETTINGS_DIM, PANEL_DARK, PANEL_DARK_HEADER, PANEL_HEADER_LINE, PANEL_DARK_TILE, PANEL_DARK_TILE_HOVER, PANEL_LINE,
             INFO_BOX, GOLD, CREAM, WHITE, YELLOW, TEXT_MUTED, BUTTON, BUTTON_HOVER, BUTTON_HOVER_OUTLINE, BUTTON_DISABLED,
             BUTTON_ICON_BADGE, BUTTON_ICON_DISABLED, BUTTON_TEXT_DISABLED, SCROLL_TRACK, SCROLL_THUMB, TOGGLE_TRACK_OFF,
-            TOGGLE_TRACK_ON, TOGGLE_KNOB, TOGGLE_OUTLINE, TOGGLE_OUTLINE_HOVER, TOGGLE_OFF_CROSS, SLIDER_TICK, CURSOR,
+            TOGGLE_TRACK_ON, TOGGLE_KNOB, TOGGLE_OUTLINE, TOGGLE_OUTLINE_HOVER, TOGGLE_OFF_CROSS, SLIDER_TICK, TOOLTIP, TOOLTIP_OUTLINE, CURSOR,
             CURSOR_OUTLINE;
 
     private static Palette shown;
@@ -58,6 +58,8 @@ public final class Theme {
         BUTTON_ICON_DISABLED = p.get("button_icon_disabled");
         BUTTON_TEXT_DISABLED = p.get("button_text_disabled");
         SCROLL_TRACK = p.get("scroll_track");
+        TOOLTIP = p.get("tooltip");
+        TOOLTIP_OUTLINE = p.get("tooltip_outline");
         SCROLL_THUMB = p.get("scroll_thumb");
         TOGGLE_TRACK_OFF = p.get("toggle_track_off");
         TOGGLE_TRACK_ON = p.get("toggle_track_on");

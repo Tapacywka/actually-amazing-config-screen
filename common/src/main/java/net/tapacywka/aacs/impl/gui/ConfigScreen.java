@@ -51,6 +51,8 @@ public final class ConfigScreen extends Screen {
     private int tab;
     private List<Row> rows;
     private final SmoothScroll scroller = new SmoothScroll();
+    /** Without room for the card: the description of the row under the pointer. */
+    private final ScrollTooltip tip = new ScrollTooltip();
     private float scroll;
     private boolean draggingBar;
     private Row draggingRow;
@@ -675,6 +677,26 @@ public final class ConfigScreen extends Screen {
         }
     }
 
+    /**
+     * Without room for the card: the description of the row under the pointer as a tooltip under or over the row, none
+     * while a slider or the tooltip's own bar is dragged or over the open list; one that scrolls stays while the
+     * pointer is on it.
+     */
+    private void followTooltip(int mx, int my) {
+        if (tip.dragging() || tip.scrolls() && tip.contains(mx, my)) return;
+        if (scroll != scroller.target()) {
+            tip.hide(); // the rows still move: placed now, it would stay behind them
+            return;
+        }
+        Row at = null;
+        if (draggingRow == null && (openList == null || !openList.over(mx, my)) && my >= listTop && my < listBottom
+                && mx >= contentX() && mx < contentX() + contentW()) {
+            for (Row r : rows) if (r.tooltip != null && inView(r) && my >= r.y && my < r.y + r.height()) at = r;
+        }
+        if (at == null) tip.hide();
+        else tip.show(at, at.label, at.tooltip, mx, at.y, at.y + at.height(), width, Grid.MARGIN, footerY() - Grid.GAP);
+    }
+
     /** Where the pictures start under the name and description: below the longest description of the screen. */
     private float descriptionRoom;
     private String roomKey;
@@ -765,7 +787,9 @@ public final class ConfigScreen extends Screen {
         EdgeFade.capture(g);
         g.enableScissor((int) panelX, (int) listTop, (int) (panelX + panelW), (int) listBottom);
         float yy = listTop - scroll;
-        int rowMy = my >= listTop && my < listBottom && (openList == null || !openList.over(mx, my)) ? my : -10_000;
+        // A scrolling tooltip holds the pointer: the rows under it are not pointed at.
+        boolean onTip = !card && tip.scrolls() && tip.contains(mx, my);
+        int rowMy = my >= listTop && my < listBottom && !onTip && (openList == null || !openList.over(mx, my)) ? my : -10_000;
         for (Row r : rows) {
             r.y = yy;
             if (r.shown() && yy + r.height() > listTop && yy < listBottom) {
@@ -804,8 +828,10 @@ public final class ConfigScreen extends Screen {
         Ui.actionButton(g, footerButtonX(n + 1), by, bw, CommonComponents.GUI_DONE, Icon.CHECK, true, mx, my);
 
         // Without room for the card, the description of the row under the pointer as a tooltip, over everything.
-        if (!card && pointed != null && draggingRow == null && my >= pointed.y && my < pointed.y + pointed.height()) {
-            g.renderTooltip(font, font.split(pointed.tooltip, Math.max(120, (int) (panelW / 2))), mx, my);
+        if (card) tip.hide();
+        else {
+            followTooltip(mx, my);
+            tip.render(g, mx, my);
         }
         if (draggingRow != null) Cursors.force(Cursors.Shape.RESIZE_H);
         if (draggingBar) Cursors.force(Cursors.Shape.RESIZE_V);
@@ -822,9 +848,12 @@ public final class ConfigScreen extends Screen {
             onClose();
             return true;
         }
+        // A scrolling tooltip takes the clicks on it (its bar), none reach the rows under it.
+        if (!card && tip.click(mx, my)) return true;
         for (int i = 0; tabs.size() > 1 && i < tabs.size(); i++) {
             if (Draw.inRect(mx, my, tabX(i), tabY(), tabW(i), TAB_H)) {
                 closeList();
+                tip.hide();
                 tab = i;
                 SHOWN_TAB.put(spec.modId, i);
                 rows = tabs.get(i);
@@ -872,6 +901,7 @@ public final class ConfigScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
+        if (tip.drag(my)) return true;
         if (draggingBar) {
             dragBar(my);
             return true;
@@ -889,6 +919,7 @@ public final class ConfigScreen extends Screen {
         if (draggingRow != null) draggingRow.release();
         draggingRow = null;
         draggingBar = false;
+        tip.release();
         if (openList != null) openList.release();
         return super.mouseReleased(mx, my, button);
     }
@@ -899,6 +930,8 @@ public final class ConfigScreen extends Screen {
             openList.scrollBy(sy);
             return true;
         }
+        if (!card && tip.scroll(mx, my, sy)) return true;
+        tip.hide(); // the rows move under it
         scroller.wheel(sy, WHEEL);
         return true;
     }

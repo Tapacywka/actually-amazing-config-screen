@@ -134,6 +134,15 @@ public final class TestScreen {
                 ConfigScreen.testPointer = at(mc, 4);
             }
             case 7 -> shot(mc, prefix + "_rounded");
+            case 8 -> {
+                // A window too narrow for the card: the description shows as a tooltip by the row.
+                rounded = false;
+                // 560 GUI units: the panel and its margins, too little left for the card (200) at any scale.
+                int w = (int) (mc.getWindow().getGuiScale() * 560);
+                org.lwjgl.glfw.GLFW.glfwSetWindowSize(mc.getWindow().getWindow(), w, mc.getWindow().getHeight());
+            }
+            case 9 -> ConfigScreen.testPointer = at(mc, 4);
+            case 10 -> shot(mc, prefix + "_narrow");
             default -> {
                 OPACITY.reset();
                 mc.stop();
