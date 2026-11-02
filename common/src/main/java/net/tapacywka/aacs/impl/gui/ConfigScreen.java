@@ -1,7 +1,13 @@
 package net.tapacywka.aacs.impl.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
+import net.tapacywka.aacs.impl.version.Game;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -16,7 +22,6 @@ import net.tapacywka.aacs.impl.render.DrawText;
 import net.tapacywka.aacs.impl.render.EdgeFade;
 import net.tapacywka.aacs.impl.render.Icon;
 import net.tapacywka.aacs.impl.render.Theme;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -184,12 +189,12 @@ public final class ConfigScreen extends Screen {
             return null;
         }
 
-        void renderLabel(GuiGraphics g, float x, float w) {
+        void renderLabel(GuiGraphicsExtractor g, float x, float w) {
             // Short of the middle by the reset icon too, so the label never jumps when the icon shows.
             DrawText.text(g, DrawText.fit(label.getString(), (int) (w / 2 - 2 * Grid.GAP - RESET)), x, DrawText.textY(y, Grid.ROW), Theme.WHITE, false);
         }
 
-        abstract void render(GuiGraphics g, float x, float w, int mx, int my);
+        abstract void render(GuiGraphicsExtractor g, float x, float w, int mx, int my);
 
         boolean click(double mx, double my, float x, float w) {
             return false;
@@ -214,7 +219,7 @@ public final class ConfigScreen extends Screen {
             return value != null && !value.isDefault() && my >= y && my < y + Grid.ROW && mx >= x && mx < x + w;
         }
 
-        void renderReset(GuiGraphics g, float x, float w, int mx, int my) {
+        void renderReset(GuiGraphicsExtractor g, float x, float w, int mx, int my) {
             if (!resetShown(x, w, mx, my)) return;
             float cx = resetX(x, w), cy = y + Grid.ROW / 2f;
             boolean hover = Draw.inRect(mx, my, cx - RESET / 2f - 1, cy - RESET / 2f - 1, RESET + 2, RESET + 2);
@@ -246,7 +251,7 @@ public final class ConfigScreen extends Screen {
         }
 
         @Override
-        void render(GuiGraphics g, float x, float w, int mx, int my) {
+        void render(GuiGraphicsExtractor g, float x, float w, int mx, int my) {
             DrawText.text(g, DrawText.fit(label.getString(), (int) w), x, y + Grid.PAD, Theme.GOLD, false);
             Draw.rect(g, x, y + SECTION_H - 3, x + w, y + SECTION_H - 2, Theme.PANEL_LINE);
         }
@@ -269,7 +274,7 @@ public final class ConfigScreen extends Screen {
         }
 
         @Override
-        void render(GuiGraphics g, float x, float w, int mx, int my) {
+        void render(GuiGraphicsExtractor g, float x, float w, int mx, int my) {
             boolean hover = Draw.inRect(mx, my, x, y + 2, w, Grid.ROW - 4);
             if (hover) Cursors.want(Cursors.Shape.HAND);
             Draw.rect(g, x, y + 2, x + w, y + Grid.ROW - 2, hover ? Theme.PANEL_DARK_TILE_HOVER : Theme.INFO_BOX);
@@ -320,7 +325,7 @@ public final class ConfigScreen extends Screen {
         }
 
         @Override
-        void render(GuiGraphics g, float x, float w, int mx, int my) {
+        void render(GuiGraphicsExtractor g, float x, float w, int mx, int my) {
             super.render(g, x, w, mx, my);
             boolean on = get.get();
             float ax = ax(x, w), ay = y + Grid.ROW / 2f;
@@ -387,7 +392,7 @@ public final class ConfigScreen extends Screen {
         }
 
         @Override
-        void render(GuiGraphics g, float x, float w, int mx, int my) {
+        void render(GuiGraphicsExtractor g, float x, float w, int mx, int my) {
             renderLabel(g, x, w);
             Ui.toggle(g, tx(x, w), ty(), get.get(), mx, my);
         }
@@ -451,7 +456,7 @@ public final class ConfigScreen extends Screen {
         }
 
         @Override
-        void render(GuiGraphics g, float x, float w, int mx, int my) {
+        void render(GuiGraphicsExtractor g, float x, float w, int mx, int my) {
             renderLabel(g, x, w);
             if (s.stepKeys != null) {
                 // The value column fits the longest step name of every step row of the tab (in the current language),
@@ -553,7 +558,7 @@ public final class ConfigScreen extends Screen {
         }
 
         @Override
-        void render(GuiGraphics g, float x, float w, int mx, int my) {
+        void render(GuiGraphicsExtractor g, float x, float w, int mx, int my) {
             renderLabel(g, x, w);
             float bx = controlLeft(x, w), bw = w / 2, by = by();
             boolean active = active(), hover = Draw.inRect(mx, my, bx, by, bw, H);
@@ -672,7 +677,7 @@ public final class ConfigScreen extends Screen {
         scroller.toFraction((float) ((my - barGrab - listTop) / (view - th)));
     }
 
-    private void renderBar(GuiGraphics g, float total, int mx, int my) {
+    private void renderBar(GuiGraphicsExtractor g, float total, int mx, int my) {
         float view = listBottom - listTop;
         if (total <= view) return;
         boolean hover = barHit(mx, my);
@@ -711,7 +716,7 @@ public final class ConfigScreen extends Screen {
         return x;
     }
 
-    private void renderTab(GuiGraphics g, int i, int mx, int my) {
+    private void renderTab(GuiGraphicsExtractor g, int i, int mx, int my) {
         float x = tabX(i), y = tabY(), w = tabW(i);
         boolean shown = i == tab, hover = !shown && Draw.inRect(mx, my, x, y, w, TAB_H);
         if (hover) Cursors.want(Cursors.Shape.HAND);
@@ -805,7 +810,7 @@ public final class ConfigScreen extends Screen {
      * under them (a caption with its value under a picture that has none of its own); with none pointed at, a line
      * asking for one.
      */
-    private void renderCard(GuiGraphics g, int mx, int my, float pt) {
+    private void renderCard(GuiGraphicsExtractor g, int mx, int my, float pt) {
         float x = cardX, y = panelY, w = cardW, h = panelH;
         Draw.rect(g, x, y, x + w, y + h, Theme.PANEL_DARK);
         Draw.rect(g, x, y, x + w, y + Grid.HEADER_H, Theme.PANEL_DARK_HEADER);
@@ -823,10 +828,10 @@ public final class ConfigScreen extends Screen {
         Draw.rect(g, cx, cy + DrawText.LINE + Grid.GAP, cx + cw, cy + DrawText.LINE + Grid.GAP + 1, Theme.PANEL_LINE);
         float ty = cy + DrawText.LINE + 2 * Grid.GAP + 1;
         for (FormattedCharSequence l : font.split(row.tooltip, (int) cw)) {
-            g.pose().pushPose();
-            g.pose().translate(Draw.snap(cx), Draw.snap(ty), 0);
-            g.drawString(font, l, 0, 0, Theme.CREAM, false);
-            g.pose().popPose();
+            g.pose().pushMatrix();
+            g.pose().translate(Draw.snap(cx), Draw.snap(ty));
+            g.text(font, l, 0, 0, Theme.CREAM, false);
+            g.pose().popMatrix();
             ty += DrawText.LINE + 2;
         }
         if (row.preview == null) return;
@@ -847,7 +852,7 @@ public final class ConfigScreen extends Screen {
     }
 
     /** Lines of muted text in the middle of the area, each shortened to fit. */
-    private static void cardLines(GuiGraphics g, float x, float y, float w, float h, List<Component> lines) {
+    private static void cardLines(GuiGraphicsExtractor g, float x, float y, float w, float h, List<Component> lines) {
         float top = y + (h - lines.size() * (DrawText.LINE + 2) + 2) / 2f;
         for (int i = 0; i < lines.size(); i++) {
             Component t = Component.literal(DrawText.fit(lines.get(i).getString(), (int) w));
@@ -858,29 +863,30 @@ public final class ConfigScreen extends Screen {
     // ------------------------------------------------------------------ drawing
 
     @Override
-    public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
+    public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float pt) {
         if (spec.background != null) spec.background.draw(g, width, height, pt);
-        else super.renderBackground(g, mx, my, pt);
+        else super.extractBackground(g, mx, my, pt);
     }
 
     /** Development checks only: where the pointer is taken to be (GUI units) instead of the mouse; null in play. */
     public static int[] testPointer;
 
     @Override
-    public void render(GuiGraphics g, int mx, int my, float pt) {
+    public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float pt) {
         if (testPointer != null) {
             mx = testPointer[0];
             my = testPointer[1];
         }
         Theme.use(spec.palette.get(), !spec.rounded.getAsBoolean());
         Cursors.begin();
-        renderBackground(g, mx, my, pt);
+        // The background is drawn by the game before this (in a stratum of its own, Screen.extractRenderStateWithTooltipAndSubtitles).
         layout();
         if (spec.background != null) {
             // The mod's own background blurred under the panel, as the game blurs the world (the copy is reused while
             // nothing changes: refreshed for the first frames, after a resize and after a change of colours).
             boolean refresh = blurFrames < 3 || width != blurW || height != blurH || Theme.generation() != blurTheme;
-            Backdrop.capture(g, pt, refresh, this);
+            int bx = mx, by = my;
+            Backdrop.capture(g, pt, refresh, this, () -> extractBackground(g, bx, by, pt));
             blurFrames++;
             blurW = width;
             blurH = height;
@@ -953,7 +959,9 @@ public final class ConfigScreen extends Screen {
     // ------------------------------------------------------------------ input
 
     @Override
-    public boolean mouseClicked(double mx, double my, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mx = event.x(), my = event.y();
+        int button = event.button();
         layout();
         if (openList != null && openList.click(mx, my, button)) return true;
         if (Ui.closeHit(panelX, panelY, panelW, mx, my)) {
@@ -1009,11 +1017,13 @@ public final class ConfigScreen extends Screen {
                 }
             }
         }
-        return super.mouseClicked(mx, my, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        double mx = event.x(), my = event.y();
+        int button = event.button();
         if (tip.drag(my)) return true;
         if (draggingBar) {
             dragBar(my);
@@ -1024,17 +1034,17 @@ public final class ConfigScreen extends Screen {
             return true;
         }
         if (openList != null && openList.drag(my)) return true;
-        return super.mouseDragged(mx, my, button, dx, dy);
+        return super.mouseDragged(event, dx, dy);
     }
 
     @Override
-    public boolean mouseReleased(double mx, double my, int button) {
+    public boolean mouseReleased(MouseButtonEvent event) {
         if (draggingRow != null) draggingRow.release();
         draggingRow = null;
         draggingBar = false;
         tip.release();
         if (openList != null) openList.release();
-        return super.mouseReleased(mx, my, button);
+        return super.mouseReleased(event);
     }
 
     @Override
@@ -1050,18 +1060,19 @@ public final class ConfigScreen extends Screen {
     }
 
     @Override
-    public boolean charTyped(char c, int mods) {
-        return openList != null && openList.charTyped(c, mods) || super.charTyped(c, mods);
+    public boolean charTyped(CharacterEvent event) {
+        return openList != null && openList.charTyped((char) event.codepoint(), 0) || super.charTyped(event);
     }
 
     @Override
-    public boolean keyPressed(int key, int scan, int mods) {
+    public boolean keyPressed(KeyEvent event) {
+        int key = event.key(), scan = Game.scancode(event), mods = event.modifiers();
         if (openList != null && openList.keyPressed(key, scan, mods)) return true;
-        if (key == GLFW.GLFW_KEY_ESCAPE) {
+        if (key == InputConstants.KEY_ESCAPE) {
             onClose();
             return true;
         }
-        return super.keyPressed(key, scan, mods);
+        return super.keyPressed(event);
     }
 
     // ------------------------------------------------------------------ the GUI scale cap, closing
@@ -1093,6 +1104,7 @@ public final class ConfigScreen extends Screen {
     public void removed() {
         closeList();
         Cursors.reset();
+        Backdrop.dispose();
         EdgeFade.dispose();
         if (scaleCapped) {
             Minecraft mc = Minecraft.getInstance();
@@ -1105,6 +1117,6 @@ public final class ConfigScreen extends Screen {
     public void onClose() {
         spec.file.save();
         for (net.tapacywka.aacs.api.ConfigFile f : extraFiles) if (f != spec.file) f.save();
-        Minecraft.getInstance().setScreen(parent);
+        Game.setScreen(parent);
     }
 }

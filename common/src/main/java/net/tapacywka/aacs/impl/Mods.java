@@ -58,16 +58,44 @@ public final class Mods {
     }
 
     /**
-     * The original VulkanMod (Fabric) keeps a texture drawn into with its top row first, OpenGL and VulkanMod-Reforged
-     * (NeoForge) the bottom row first (lesson of Teyvat Cartographia, 30.10.2026).
+     * VulkanMod before 0.6.9 keeps a texture drawn into with its top row first, OpenGL and later VulkanMod the bottom
+     * row first (lesson of Teyvat Cartographia, 30.10.2026: 0.6.8 for 26.1.2 so, 0.6.9-dev.5 for 26.2 as OpenGL).
      */
     private static boolean vulkanTopFirst() {
-        if (!vulkan()) return false;
+        return vulkan() && topFirst(version("vulkanmod"));
+    }
+
+    /** A version is before 0.6.9 (its pre-releases 0.6.9-dev.N already count as 0.6.9). */
+    static boolean topFirst(String version) {
+        String[] parts = version.split("[^0-9]+", 4);
+        int[] want = {0, 6, 9};
+        for (int i = 0; i < want.length; i++) {
+            int n = i < parts.length && !parts[i].isEmpty() ? Integer.parseInt(parts[i]) : 0;
+            if (n != want[i]) return n < want[i];
+        }
+        return false;
+    }
+
+    /** The version of a mod as its loader has it, or "" when it is not loaded. */
+    public static String version(String id) {
         try {
-            Class.forName("net.neoforged.fml.ModList", false, Mods.class.getClassLoader());
-            return false;
-        } catch (ClassNotFoundException e) {
-            return true;
+            Object loader = Class.forName("net.fabricmc.loader.api.FabricLoader").getMethod("getInstance").invoke(null);
+            Object c = ((java.util.Optional<?>) Class.forName("net.fabricmc.loader.api.FabricLoader").getMethod("getModContainer", String.class).invoke(loader, id)).orElse(null);
+            if (c == null) return "";
+            Object meta = Class.forName("net.fabricmc.loader.api.ModContainer").getMethod("getMetadata").invoke(c);
+            Object v = Class.forName("net.fabricmc.loader.api.metadata.ModMetadata").getMethod("getVersion").invoke(meta);
+            return (String) Class.forName("net.fabricmc.loader.api.Version").getMethod("getFriendlyString").invoke(v);
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // Not Fabric.
+        }
+        try {
+            Object list = Class.forName("net.neoforged.fml.ModList").getMethod("get").invoke(null);
+            Object c = ((java.util.Optional<?>) list.getClass().getMethod("getModContainerById", String.class).invoke(list, id)).orElse(null);
+            if (c == null) return "";
+            Object info = Class.forName("net.neoforged.fml.ModContainer").getMethod("getModInfo").invoke(c);
+            return String.valueOf(Class.forName("net.neoforged.neoforgespi.language.IModInfo").getMethod("getVersion").invoke(info));
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            return "";
         }
     }
 

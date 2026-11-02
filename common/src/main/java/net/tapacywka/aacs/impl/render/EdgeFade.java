@@ -1,12 +1,12 @@
 package net.tapacywka.aacs.impl.render;
 
 import net.tapacywka.aacs.impl.Mods;
-import com.mojang.blaze3d.pipeline.TextureTarget;
-import com.mojang.blaze3d.vertex.BufferBuilder;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL11;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import org.joml.Matrix3x2fc;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A scrolling list that dissolves at its top and bottom edges (user request 25.10.2026): its rows are drawn into a
@@ -26,24 +26,27 @@ public final class EdgeFade {
     /** Bands per edge: the smoothstep drawn as straight pieces (8 is closer than a screen's 1/255 steps can show). */
     private static final int BANDS = 8;
 
-    private static TextureTarget rows;
+    /**
+     * One layer per list drawn in a frame (the settings rows, then the plant list under them): since 26.1 the frame's GUI
+     * is drawn after all of them, so a list reusing the layer of the one before replaced its rows (the settings rows
+     * vanished while the plant list was open).
+     */
+    private static final List<CachedLayer> layers = new ArrayList<>();
+    private static CachedLayer rows;
+    private static int used;
+    private static GuiGraphicsExtractor frame;
     private static boolean active;
 
     /** Starts the rows: from here until {@link #draw} everything is drawn into the rows' layer. */
-    public static void capture(GuiGraphics g) {
-        g.flush();
-        var main = Minecraft.getInstance().getMainRenderTarget();
-        if (rows == null) {
-            rows = new TextureTarget(main.width, main.height, true, Minecraft.ON_OSX); // depth: the plant list's items
-            rows.setFilterMode(GL11.GL_NEAREST);
-        } else if (rows.width != main.width || rows.height != main.height) {
-            rows.resize(main.width, main.height, Minecraft.ON_OSX);
-            rows.setFilterMode(GL11.GL_NEAREST);
+    public static void capture(GuiGraphicsExtractor g) {
+        if (g != frame) {
+            frame = g; // a new frame: its lists use the layers from the first again
+            used = 0;
         }
-        rows.setClearColor(0f, 0f, 0f, 0f);
-        rows.clear(Minecraft.ON_OSX);
-        rows.bindWrite(true);
-        Draw.beginLayer(); // coverage kept as alpha, the layer premultiplied
+        if (used == layers.size()) layers.add(new CachedLayer());
+        rows = layers.get(used++);
+        var w = Minecraft.getInstance().getWindow();
+        rows.bind(g, w.getWidth(), w.getHeight(), false);
         active = true;
     }
 
@@ -53,17 +56,15 @@ public final class EdgeFade {
      * bottom one at {@code bottomAmount} (0 to 1: 0 while nothing lies beyond that edge, growing as the list scrolls
      * away from it).
      */
-    public static void draw(GuiGraphics g, float x0, float x1, float top, float bottom, float height, float topAmount, float bottomAmount) {
+    public static void draw(GuiGraphicsExtractor g, float x0, float x1, float top, float bottom, float height, float topAmount, float bottomAmount) {
         if (!active) return;
-        g.flush();
-        Draw.endLayer();
-        Minecraft.getInstance().getMainRenderTarget().bindWrite(true);
+        rows.unbind();
         active = false;
         var w = Minecraft.getInstance().getWindow();
         float gw = (float) (w.getWidth() / w.getGuiScale()), gh = (float) (w.getHeight() / w.getGuiScale());
         height = Math.min(height, (bottom - top) / 2);
-        Matrix4f m = g.pose().last().pose();
-        BufferBuilder b = Draw.beginTex();
+        Matrix3x2fc m = g.pose();
+        Mesh b = Draw.beginTex();
         for (int i = 0; i < BANDS; i++) {
             float f0 = (float) i / BANDS, f1 = (float) (i + 1) / BANDS; // 0 at the edge, 1 where the fade ends
             band(b, m, x0, x1, top + f0 * height, top + f1 * height, gw, gh, shown(f0, topAmount), shown(f1, topAmount));
@@ -73,7 +74,7 @@ public final class EdgeFade {
         // Whatever the rows drew beside the faded part (a pointer left of a row) is laid whole.
         band(b, m, 0, x0, top, bottom, gw, gh, 0xFFFFFFFF, 0xFFFFFFFF);
         band(b, m, x1, gw, top, bottom, gw, gh, 0xFFFFFFFF, 0xFFFFFFFF);
-        Draw.endPremultiplied(b, rows.getColorTextureId());
+        Draw.endPremultiplied(g, b, rows.tex());
     }
 
     /** How much of the rows shows {@code f} of the way from the edge: all channels, faded on a smoothstep near it. */
@@ -84,27 +85,26 @@ public final class EdgeFade {
     }
 
     /** One band from {@code ya} (colour {@code ca}) to {@code yb} ({@code cb}). */
-    private static void band(BufferBuilder b, Matrix4f m, float x0, float x1, float ya, float yb, float gw, float gh, int ca, int cb) {
+    private static void band(Mesh b, Matrix3x2fc m, float x0, float x1, float ya, float yb, float gw, float gh, int ca, int cb) {
         if (yb <= ya || x1 <= x0) return;
         float u0 = x0 / gw, u1 = x1 / gw, va = Mods.v(1 - ya / gh), vb = Mods.v(1 - yb / gh);
         Draw.vtx(b, m, x0, ya, u0, va, ca); Draw.vtx(b, m, x0, yb, u0, vb, cb); Draw.vtx(b, m, x1, yb, u1, vb, cb);
         Draw.vtx(b, m, x0, ya, u0, va, ca); Draw.vtx(b, m, x1, yb, u1, vb, cb); Draw.vtx(b, m, x1, ya, u1, va, ca);
     }
 
-    /** Ends the frame's list: if {@link #draw} was skipped, the screen is the draw target again. */
+    /** Ends the frame's list: if {@link #draw} was skipped, the rows are dropped. */
     public static void release() {
         if (!active) return;
         active = false;
-        Draw.endLayer();
-        Minecraft.getInstance().getMainRenderTarget().bindWrite(true);
+        rows.unbind();
     }
 
     /** Frees the layer (the screen is closed): a whole screen's worth of video memory. */
     public static void dispose() {
-        active = false;
-        if (rows != null) {
-            rows.destroyBuffers();
-            rows = null;
-        }
+        release();
+        for (CachedLayer layer : layers) layer.destroy();
+        layers.clear();
+        rows = null;
+        frame = null;
     }
 }

@@ -1,6 +1,6 @@
 package net.tapacywka.aacs.impl.render;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.tapacywka.aacs.api.Aacs;
 import net.tapacywka.aacs.api.Palette;
 
@@ -88,7 +88,7 @@ public final class Theme {
     }
 
     /** A file of the library's own assets ({@code assets/aacs/<path>}). */
-    public static ResourceLocation asset(String path) {
-        return ResourceLocation.fromNamespaceAndPath(Aacs.MOD_ID, path);
+    public static Identifier asset(String path) {
+        return Identifier.fromNamespaceAndPath(Aacs.MOD_ID, path);
     }
 }

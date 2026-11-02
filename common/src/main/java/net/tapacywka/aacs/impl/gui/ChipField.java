@@ -1,7 +1,13 @@
 package net.tapacywka.aacs.impl.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import net.tapacywka.aacs.impl.gui.Ui.Grid;
@@ -9,7 +15,6 @@ import net.tapacywka.aacs.impl.render.Draw;
 import net.tapacywka.aacs.impl.render.DrawText;
 import net.tapacywka.aacs.impl.render.Icon;
 import net.tapacywka.aacs.impl.render.Theme;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.function.Consumer;
 
@@ -74,7 +79,7 @@ public final class ChipField {
         box.setFocused(false);
     }
 
-    public void render(GuiGraphics g, float x, float y, float w, int mx, int my) {
+    public void render(GuiGraphicsExtractor g, float x, float y, float w, int mx, int my) {
         this.x = x;
         this.y = y;
         this.w = w;
@@ -90,7 +95,7 @@ public final class ChipField {
         box.setY(Math.round(DrawText.textY(y, Grid.CHIP_H)));
         box.setWidth(maxText);
         if (focused) {
-            box.render(g, mx, my, 0);
+            box.extractRenderState(g, mx, my, 0);
             return;
         }
         boolean empty = box.getValue().isEmpty();
@@ -107,7 +112,7 @@ public final class ChipField {
     public boolean click(double mx, double my, int button) {
         boolean on = Draw.inRect(mx, my, x, y, w, Grid.CHIP_H);
         box.setFocused(on);
-        if (on) box.mouseClicked(mx, my, button);
+        if (on) box.mouseClicked(new MouseButtonEvent(mx, my, new MouseButtonInfo(button, 0)), false);
         return on;
     }
 
@@ -117,16 +122,16 @@ public final class ChipField {
      */
     public boolean keyPressed(int key, int scan, int mods, Runnable onEnter) {
         if (!box.isFocused()) return false;
-        if (key == GLFW.GLFW_KEY_ESCAPE || key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+        if (key == InputConstants.KEY_ESCAPE || key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
             box.setFocused(false);
-            if (key != GLFW.GLFW_KEY_ESCAPE && onEnter != null) onEnter.run();
+            if (key != InputConstants.KEY_ESCAPE && onEnter != null) onEnter.run();
             return true;
         }
-        box.keyPressed(key, scan, mods);
+        box.keyPressed(new KeyEvent(key, scan, mods));
         return true;
     }
 
     public boolean charTyped(char c, int mods) {
-        return box.isFocused() && box.charTyped(c, mods);
+        return box.isFocused() && box.charTyped(new CharacterEvent(c));
     }
 }

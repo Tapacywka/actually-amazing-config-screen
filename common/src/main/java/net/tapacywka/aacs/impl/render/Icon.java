@@ -1,6 +1,6 @@
 package net.tapacywka.aacs.impl.render;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * The library's own white glyphs ({@code assets/aacs/textures/icon/<name>.png}, 64 x 64, from Nieobie's Game Icon Pack,
@@ -13,9 +13,9 @@ public final class Icon {
     public static final Icon CLOSE = new Icon(Theme.asset("textures/icon/close.png"));
     public static final Icon SEARCH = new Icon(Theme.asset("textures/icon/search.png"));
 
-    public final ResourceLocation texture;
+    public final Identifier texture;
 
-    public Icon(ResourceLocation texture) {
+    public Icon(Identifier texture) {
         this.texture = texture;
     }
 }

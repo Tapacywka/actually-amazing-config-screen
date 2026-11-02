@@ -9,6 +9,10 @@ on Fabric.
 
 ## [Unreleased]
 
+### Added
+- Minecraft 26.1.2, 26.2 and 26.3, on Fabric and NeoForge. For mod authors the API is the same, with the names 26.x
+  uses: pictures and backgrounds draw on `GuiGraphicsExtractor`, icons are an `Identifier`.
+
 ## [0.1.0-beta.1] - 2026-11-02
 
 ### Added

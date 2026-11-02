@@ -1,6 +1,6 @@
 package net.tapacywka.aacs.impl.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.tapacywka.aacs.impl.render.Backdrop;
 import net.tapacywka.aacs.impl.render.Draw;
@@ -32,7 +32,7 @@ public final class Ui {
     // ------------------------------------------------------------------ panel chrome
 
     /** The panel: a translucent body over the blurred backdrop, a header with icon, gold title and the close cross. */
-    public static void panel(GuiGraphics g, float x, float y, float w, float h, Component title, Icon titleIcon, int mx, int my) {
+    public static void panel(GuiGraphicsExtractor g, float x, float y, float w, float h, Component title, Icon titleIcon, int mx, int my) {
         Backdrop.draw(g, x, y, x + w, y + h);
         Draw.rect(g, x, y, x + w, y + h, Theme.PANEL_DARK);
         Draw.rect(g, x, y, x + w, y + Grid.HEADER_H, Theme.PANEL_DARK_HEADER);
@@ -61,7 +61,7 @@ public final class Ui {
      * An action button ({@link Grid#ACTION_H} high): a dark badge with the icon in the left end (none for a null icon),
      * the label centred between it and the right edge; a capsule in the rounded style, a rectangle in the other.
      */
-    public static void actionButton(GuiGraphics g, float x, float y, float w, Component label, Icon icon,
+    public static void actionButton(GuiGraphicsExtractor g, float x, float y, float w, Component label, Icon icon,
                                     boolean enabled, int mx, int my) {
         float h = Grid.ACTION_H;
         boolean hover = enabled && Draw.inRect(mx, my, x, y, w, h);
@@ -96,7 +96,7 @@ public final class Ui {
     }
 
     /** The switch ({@link Grid#TOGGLE_W} x {@link Grid#TOGGLE_H}). */
-    public static void toggle(GuiGraphics g, float x, float y, boolean on, int mx, int my) {
+    public static void toggle(GuiGraphicsExtractor g, float x, float y, boolean on, int mx, int my) {
         float w = Grid.TOGGLE_W, h = Grid.TOGGLE_H, r = h / 2f;
         boolean hover = Draw.inRect(mx, my, x, y, w, h);
         if (hover) Cursors.want(Cursors.Shape.HAND);
@@ -124,7 +124,7 @@ public final class Ui {
     }
 
     /** The box of a tooltip: near opaque, a faint outline one unit inside in the rectangular style. */
-    public static void tooltipBox(GuiGraphics g, float x, float y, float w, float h) {
+    public static void tooltipBox(GuiGraphicsExtractor g, float x, float y, float w, float h) {
         if (Theme.Style.squareUi) {
             Draw.rect(g, x, y, x + w, y + h, Theme.TOOLTIP);
             Draw.frame(g, x + 1, y + 1, w - 2, h - 2, 1, Theme.TOOLTIP_OUTLINE);

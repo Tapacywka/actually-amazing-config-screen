@@ -1,6 +1,6 @@
 package net.tapacywka.aacs.impl.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.tapacywka.aacs.api.AacsScreen;
 import net.tapacywka.aacs.api.ListValue;
@@ -82,7 +82,7 @@ final class ToggleList {
         return Math.min(room, 2 * Grid.GAP + Grid.CHIP_H + Grid.GAP + Math.min(MAX_ROWS, Math.max(1, shown.size())) * ITEM_H + Grid.GAP);
     }
 
-    void render(GuiGraphics g, float x, float y, float w, float h, int mx, int my) {
+    void render(GuiGraphicsExtractor g, float x, float y, float w, float h, int mx, int my) {
         this.x = x;
         this.y = y;
         this.w = w;
@@ -228,6 +228,6 @@ final class ToggleList {
     /** A text of the list: the mod's for its row when it has one, else the library's. */
     private Component text(String part, Object... args) {
         String own = rowKey + "." + part;
-        return Component.translatable(net.minecraft.client.resources.language.I18n.exists(own) ? own : "aacs.list." + part, args);
+        return Component.translatable(net.minecraft.locale.Language.getInstance().has(own) ? own : "aacs.list." + part, args);
     }
 }

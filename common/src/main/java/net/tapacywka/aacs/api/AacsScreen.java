@@ -1,9 +1,9 @@
 package net.tapacywka.aacs.api;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.tapacywka.aacs.impl.ModListScreens;
 import net.tapacywka.aacs.impl.gui.ConfigScreen;
 
@@ -29,16 +29,16 @@ public final class AacsScreen {
     /** Draws the screen's background (under the panel), {@code width} x {@code height} GUI units. */
     @FunctionalInterface
     public interface Background {
-        void draw(GuiGraphics g, int width, int height, float partialTick);
+        void draw(GuiGraphicsExtractor g, int width, int height, float partialTick);
     }
 
     /** A button of the mod left of Reset and Done; {@code screen} is the settings screen (to open another over it). */
-    public record Button(String key, ResourceLocation icon, Consumer<Screen> onClick) {}
+    public record Button(String key, Identifier icon, Consumer<Screen> onClick) {}
 
     public final String modId;
     public final ConfigFile file;
     public final Component title;
-    public final ResourceLocation icon;
+    public final Identifier icon;
     /** The colours, asked each frame (return the same object while they stay the same: a new one redraws). */
     public final Supplier<Palette> palette;
     public final BooleanSupplier rounded;
@@ -132,7 +132,7 @@ public final class AacsScreen {
         private final String modId;
         private final ConfigFile file;
         private Component title;
-        private ResourceLocation icon;
+        private Identifier icon;
         private Supplier<Palette> palette = () -> Palette.DEFAULT;
         private BooleanSupplier rounded = () -> false;
         private Background background;
@@ -154,7 +154,7 @@ public final class AacsScreen {
         }
 
         /** A white 64 x 64 texture shown left of the title (tinted gold); none by default. */
-        public Builder icon(ResourceLocation icon) {
+        public Builder icon(Identifier icon) {
             this.icon = icon;
             return this;
         }
@@ -182,7 +182,7 @@ public final class AacsScreen {
             return this;
         }
 
-        public Builder button(String key, ResourceLocation icon, Consumer<Screen> onClick) {
+        public Builder button(String key, Identifier icon, Consumer<Screen> onClick) {
             buttons.add(new Button(key, icon, onClick));
             return this;
         }
@@ -431,10 +431,10 @@ public final class AacsScreen {
         Preview NONE = (g, row, x, y, w, h, partialTick) -> {};
 
         /** Runs each frame the picture shows, before anything is clipped; {@code row} is the row's lang key. */
-        default void prepare(GuiGraphics g, String row, float w, float h, float partialTick) {}
+        default void prepare(GuiGraphicsExtractor g, String row, float w, float h, float partialTick) {}
 
         /** Draws the picture of {@code row} (its lang key) in the area, clipped to it. */
-        void draw(GuiGraphics g, String row, float x, float y, float w, float h, float partialTick);
+        void draw(GuiGraphicsExtractor g, String row, float x, float y, float w, float h, float partialTick);
 
         /** Whether the card writes "name: value" under the picture; false for a picture with captions of its own. */
         default boolean caption(String row) {

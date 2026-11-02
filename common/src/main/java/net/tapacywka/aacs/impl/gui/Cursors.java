@@ -4,12 +4,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.Resource;
 import net.tapacywka.aacs.impl.Mods;
 import net.tapacywka.aacs.impl.render.Theme;
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.glfw.GLFWImage;
+import net.tapacywka.aacs.impl.version.Game;
+import net.tapacywka.aacs.impl.version.Pointer;
 import org.lwjgl.system.MemoryUtil;
 
 import java.io.InputStream;
@@ -17,10 +15,9 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
-import java.util.Optional;
 
 /**
- * The mouse pointer in the mod's menus (the world map with its panels, the settings): system cursors (GLFW), so they
+ * The mouse pointer in the mod's menus (the world map with its panels, the settings): system cursors (GLFW, SDL3 on 26.3), so they
  * move without lag at any frame rate. Made from the white 64 px masks of the theme ({@code cursors/<name>.png},
  * hotspots in {@code cursors/hotspots.json}), tinted with {@link Theme#CURSOR}, outlined with
  * {@link Theme#CURSOR_OUTLINE}, sized to the interface scale. A screen calls {@link #begin} when it starts drawing,
@@ -79,7 +76,7 @@ public final class Cursors {
             wanted.made = true;
         }
         if (wanted != applied) {
-            GLFW.glfwSetCursor(mc.getWindow().getWindow(), wanted.handle);
+            Pointer.show(wanted.handle);
             applied = wanted;
         }
     }
@@ -87,7 +84,7 @@ public final class Cursors {
     /** The vanilla pointer again (a mod screen closed). */
     public static void reset() {
         if (applied == null) return;
-        GLFW.glfwSetCursor(Minecraft.getInstance().getWindow().getWindow(), 0L);
+        Pointer.show(0L);
         applied = null;
     }
 
@@ -97,10 +94,10 @@ public final class Cursors {
     }
 
     private static void destroy() {
-        GLFW.glfwSetCursor(Minecraft.getInstance().getWindow().getWindow(), 0L);
+        Pointer.show(0L);
         applied = null;
         for (Shape s : Shape.values()) {
-            if (s.handle != 0) GLFW.glfwDestroyCursor(s.handle);
+            if (s.handle != 0) Pointer.destroy(s.handle);
             s.handle = 0;
             s.made = false;
         }
@@ -136,10 +133,7 @@ public final class Cursors {
                     }
                 }
                 pixels.flip();
-                try (GLFWImage image = GLFWImage.malloc()) {
-                    image.set(size, size, pixels);
-                    return GLFW.glfwCreateCursor(image, hot[0] * size / 64, hot[1] * size / 64);
-                }
+                return Pointer.create(pixels, size, hot[0] * size / 64, hot[1] * size / 64);
             } finally {
                 MemoryUtil.memFree(pixels);
             }
@@ -165,7 +159,7 @@ public final class Cursors {
                     for (int sx = 0; sx < 4; sx++) {
                         int px = Math.min(n - 1, (int) ((x + (sx + 0.5f) / 4f) * n / size));
                         int py = Math.min(n - 1, (int) ((y + (sy + 0.5f) / 4f) * n / size));
-                        sum += (mask.getPixelRGBA(px, py) >>> 24) / 255f;
+                        sum += (mask.getPixel(px, py) >>> 24) / 255f;
                     }
                 }
                 out[y * size + x] = sum / 16f;
@@ -176,18 +170,16 @@ public final class Cursors {
 
     /** A mask of the active theme, or of the default one; null if neither has it. */
     private static NativeImage read(String file) throws java.io.IOException {
-        Optional<Resource> res = resource(file);
-        if (res.isEmpty()) return null;
-        try (InputStream in = res.get().open()) {
-            return NativeImage.read(NativeImage.Format.RGBA, in);
+        try (InputStream in = open(file)) {
+            return in == null ? null : Game.readImage(in);
         }
     }
 
     private static int[] hotspot(String name) {
         try {
-            Optional<Resource> res = resource("hotspots.json");
-            if (res.isPresent()) {
-                try (InputStreamReader in = new InputStreamReader(res.get().open(), StandardCharsets.UTF_8)) {
+            InputStream file = open("hotspots.json");
+            if (file != null) {
+                try (InputStreamReader in = new InputStreamReader(file, StandardCharsets.UTF_8)) {
                     JsonObject o = JsonParser.parseReader(in).getAsJsonObject();
                     if (o.has(name)) return new int[]{o.getAsJsonArray(name).get(0).getAsInt(), o.getAsJsonArray(name).get(1).getAsInt()};
                 }
@@ -198,8 +190,13 @@ public final class Cursors {
         return new int[]{32, 32};
     }
 
-    private static Optional<Resource> resource(String file) {
-        var rm = Minecraft.getInstance().getResourceManager();
-        return rm.getResource(Theme.asset("cursors/" + file));
+    /** A file of the pointers, or null if there is none (opened through the resource manager: Fabric API extends the
+     * class of a single resource, and the library runs without it). */
+    private static InputStream open(String file) {
+        try {
+            return Minecraft.getInstance().getResourceManager().open(Theme.asset("cursors/" + file));
+        } catch (java.io.IOException e) {
+            return null;
+        }
     }
 }

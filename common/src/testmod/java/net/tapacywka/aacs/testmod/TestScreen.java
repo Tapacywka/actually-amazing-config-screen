@@ -1,8 +1,11 @@
 package net.tapacywka.aacs.testmod;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.tapacywka.aacs.api.AacsScreen;
 import net.tapacywka.aacs.api.BoolValue;
 import net.tapacywka.aacs.api.ConfigFile;
@@ -10,6 +13,8 @@ import net.tapacywka.aacs.api.DoubleValue;
 import net.tapacywka.aacs.api.EnumValue;
 import net.tapacywka.aacs.api.IntValue;
 import net.tapacywka.aacs.impl.gui.ConfigScreen;
+import net.tapacywka.aacs.impl.version.Game;
+import net.tapacywka.aacs.impl.version.WindowSize;
 
 import java.nio.file.Path;
 
@@ -68,8 +73,8 @@ public final class TestScreen {
                 .tab(k + "tab.display", t -> {
                     // The tab's picture: a frame with the row's key; Opacity has its own, Corner only its description.
                     t.defaultPreview((g, row, x, y, w, h, pt) -> {
-                        g.renderOutline((int) x, (int) y, (int) w, (int) h, 0xFFD3BC8E);
-                        g.drawCenteredString(net.minecraft.client.Minecraft.getInstance().font, row.substring(row.lastIndexOf('.') + 1), (int) (x + w / 2), (int) (y + h / 2 - 4), 0xFFECE5D8);
+                        g.outline((int) x, (int) y, (int) w, (int) h, 0xFFD3BC8E);
+                        g.centeredText(net.minecraft.client.Minecraft.getInstance().font, row.substring(row.lastIndexOf('.') + 1), (int) (x + w / 2), (int) (y + h / 2 - 4), 0xFFECE5D8);
                     });
                     t.section(k + "section.look").toggle(GRID).toggle(LABELS)
                             .slider(OPACITY, s -> s.unit("%"))
@@ -121,10 +126,13 @@ public final class TestScreen {
     public static void tick(java.util.function.UnaryOperator<net.minecraft.client.gui.screens.Screen> open, String prefix) {
         Minecraft mc = Minecraft.getInstance();
         if (tick < 0) {
-            if (!(mc.screen instanceof TitleScreen)) return;
-            var opened = open.apply(mc.screen);
+            // NeoForge's list of loading warnings (26.2 warns of the mod's logoFile) closes on to the title screen.
+            var screen = Game.screen();
+            if (screen != null && screen.getClass().getName().equals("net.neoforged.neoforge.client.gui.LoadingErrorScreen")) screen.onClose();
+            if (!(Game.screen() instanceof TitleScreen)) return;
+            var opened = open.apply(Game.screen());
             if (opened == null) throw new IllegalStateException("no settings screen in the mod list");
-            mc.setScreen(opened);
+            Game.setScreen(opened);
             tick = 0;
         }
         if (++tick % 40 != 0) return;
@@ -143,7 +151,7 @@ public final class TestScreen {
             case 4 -> {
                 // The list of the Flowers row (the eighth) opened by its arrow.
                 int[] p = at(mc, 8);
-                mc.screen.mouseClicked(contentRight(mc.screen.width) - 28 - 8 - 3, p[1], 0); // the arrow left of the switch
+                press(contentRight(Game.screen().width) - 28 - 8 - 3, p[1]); // the arrow left of the switch
             }
             case 5 -> shot(mc, prefix + "_list");
             case 6 -> {
@@ -166,22 +174,21 @@ public final class TestScreen {
                 rounded = false;
                 // 560 GUI units: the panel and its margins, too little left for the card (200) at any scale.
                 int w = (int) (mc.getWindow().getGuiScale() * 560);
-                org.lwjgl.glfw.GLFW.glfwSetWindowSize(mc.getWindow().getWindow(), w, mc.getWindow().getHeight());
+                WindowSize.set(w, mc.getWindow().getHeight());
             }
             case 15 -> ConfigScreen.testPointer = at(mc, 4);
             case 16 -> shot(mc, prefix + "_narrow");
             case 17 -> {
                 // The Extra tab scrolled to its end: the two sub-sections another mod added, by name.
                 ConfigScreen.testPointer = null;
-                org.lwjgl.glfw.GLFW.glfwSetWindowSize(mc.getWindow().getWindow(), 1920, mc.getWindow().getHeight());
+                WindowSize.set(1920, mc.getWindow().getHeight());
             }
             case 18 -> {
-                int x = (int) contentRight(mc.screen.width) - 60, y = 8 + 28 + 4 + 10;
-                mc.screen.mouseClicked(x, y, 0);
-                mc.screen.mouseReleased(x, y, 0);
+                int x = (int) contentRight(Game.screen().width) - 60, y = 8 + 28 + 4 + 10;
+                click(x, y);
             }
             case 19 -> {
-                for (int i = 0; i < 40; i++) mc.screen.mouseScrolled(contentRight(mc.screen.width) - 60, mc.screen.height / 2.0, 0, -1);
+                for (int i = 0; i < 40; i++) Game.screen().mouseScrolled(contentRight(Game.screen().width) - 60, Game.screen().height / 2.0, 0, -1);
             }
             case 20 -> shot(mc, prefix + "_extension");
             default -> {
@@ -193,7 +200,7 @@ public final class TestScreen {
 
     /** The middle of row {@code n} (1 first; the section is row 1) in GUI units, the pointer over the controls. */
     private static int[] at(Minecraft mc, int n) {
-        var s = mc.screen;
+        var s = Game.screen();
         return new int[]{(int) contentRight(s.width) - 60, 8 + 28 + 4 + 20 + 4 + 24 + (n - 2) * 20 + 10};
     }
 
@@ -207,11 +214,19 @@ public final class TestScreen {
 
     private static void click(Minecraft mc, int n) {
         int[] p = at(mc, n);
-        mc.screen.mouseClicked(p[0], p[1], 0);
-        mc.screen.mouseReleased(p[0], p[1], 0);
+        click(p[0], p[1]);
+    }
+
+    private static void click(double x, double y) {
+        press(x, y);
+        Game.screen().mouseReleased(new MouseButtonEvent(x, y, new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0)));
+    }
+
+    private static void press(double x, double y) {
+        Game.screen().mouseClicked(new MouseButtonEvent(x, y, new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0)), false);
     }
 
     private static void shot(Minecraft mc, String name) {
-        Screenshot.grab(mc.gameDirectory, name + ".png", mc.getMainRenderTarget(), c -> {});
+        Screenshot.grab(mc.gameDirectory, name + ".png", Game.mainTarget(), 1, c -> {});
     }
 }

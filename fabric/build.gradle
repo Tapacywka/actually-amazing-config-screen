@@ -1,6 +1,6 @@
 plugins {
     id 'multiloader-loader'
-    id 'net.fabricmc.fabric-loom-remap'
+    id 'net.fabricmc.fabric-loom'
 }
 
 // A small mod of the development game only (fabric/src/testmod): the settings screen with every kind of row, opened
@@ -18,8 +18,27 @@ repositories {
     maven { url = 'https://maven.terraformersmc.com/releases/' }
 }
 
+// The class tweaker as the game names its classes: the game's renames applied (26.3 moved blaze3d's GPU API to
+// com.mojang.renderpearl, versions/<game>.renames), for Loom in build/ and in the JAR by processResources.
+def classTweaker = file('src/main/resources/aacs.classtweaker')
+def gameRenames = rootProject.file("versions/${minecraft_version}.renames")
+if (gameRenames.exists()) {
+    // "old.package.Name new.package.Name" per line, as the class tweaker writes them: old/package/Name
+    def pairs = gameRenames.readLines().findAll { it.trim() && !it.trim().startsWith('#') }
+            .collect { it.trim().split(/\s+/).collect { name -> name.replace('.', '/') } }
+    def rename = { String text -> pairs.each { p -> text = text.replace(p[0], p[1]) }; text }
+    classTweaker = layout.buildDirectory.file('classtweaker/aacs.classtweaker').get().asFile
+    classTweaker.parentFile.mkdirs()
+    classTweaker.setText(rename(file('src/main/resources/aacs.classtweaker').getText('UTF-8')), 'UTF-8')
+    tasks.named('processResources', ProcessResources) {
+        inputs.file gameRenames
+        filesMatching('aacs.classtweaker') { filter { String line -> rename(line) } }
+    }
+}
+
 loom {
-    createRemapConfigurations(sourceSets.testmod)
+    // The fields of the game the library reaches (the same as common/'s access transformer for NeoForge).
+    accessWidenerPath = classTweaker
     mods {
         aacs {
             sourceSet sourceSets.main
@@ -42,17 +61,15 @@ loom {
 if (rootProject.file('devtest-fabric.gradle').exists()) apply from: rootProject.file('devtest-fabric.gradle')
 
 dependencies {
+    // Minecraft 26.x ships with Mojang's names: no mappings, no remapping (the JAR is the compiled one).
     minecraft "com.mojang:minecraft:${minecraft_version}"
-    mappings loom.layered {
-        officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-${parchment_minecraft_version}:${parchment_mappings_version}@zip")
-    }
-    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     // The settings buttons in Mod Menu (AacsModMenu, loaded by Mod Menu only).
-    modCompileOnly "com.terraformersmc:modmenu:${modmenu_version}"
+    compileOnly "com.terraformersmc:modmenu:${modmenu_version}"
     // Only for the test mod of the development game.
-    modTestmodImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
-    modTestmodImplementation "com.terraformersmc:modmenu:${modmenu_version}"
+    // (without the older Fabric Loader they ask for: the main one is on the classpath already)
+    testmodImplementation("net.fabricmc.fabric-api:fabric-api:${fabric_api_version}") { exclude group: 'net.fabricmc', module: 'fabric-loader' }
+    testmodImplementation("com.terraformersmc:modmenu:${modmenu_version}") { exclude group: 'net.fabricmc', module: 'fabric-loader' }
 }
 
 processResources {
@@ -67,12 +84,6 @@ processResources {
     ]
     inputs.properties props
     filesMatching('fabric.mod.json') { expand props }
-}
-
-// The released file is the remapped one, named like the plain JAR (multiloader-common).
-tasks.named('remapJar') {
-    archiveBaseName = mod_id
-    archiveVersion = "v${project.version}"
 }
 
 tasks.withType(JavaCompile).configureEach {
