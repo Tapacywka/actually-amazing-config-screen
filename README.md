@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/Tapacywka/actually-amazing-config-screen/main/.github/images/icon.png" alt="Actually Amazing Config Screen" width="128">
 </p>
 
-<h1 align="center">Actually Amazing Config Screen</h1>
+<div align="center"><h1>Actually Amazing Config Screen</h1></div>
 
 <p align="center">
   <a href="https://modrinth.com/mod/actually-amazing-config-screen"><img src="https://img.shields.io/modrinth/dt/actually-amazing-config-screen?style=flat&logo=modrinth&label=modrinth&color=00AF5C" alt="Modrinth downloads"></a>
