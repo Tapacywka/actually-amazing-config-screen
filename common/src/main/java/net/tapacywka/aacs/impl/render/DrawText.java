@@ -3,9 +3,7 @@ package net.tapacywka.aacs.impl.render;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FormattedCharSequence;
 
 /**
  * Text in GUI coordinates: always the vanilla Minecraft font at its native 1x size, snapped to the physical pixel grid
@@ -62,20 +60,6 @@ public final class DrawText {
     }
 
     /**
-     * Map-label text: light fill with a dark 8-direction outline, centred at (cx, cy). {@code flush == false} leaves
-     * the glyphs batched (call {@code g.flush()} after a group of labels).
-     */
-    public static void textOutlined(GuiGraphics g, Component text, float cx, float cy, int color, int outline, boolean flush) {
-        FormattedCharSequence seq = text.getVisualOrderText();
-        float w = Math.max(0, font().width(seq) - 1); // visible glyph width (no trailing advance)
-        g.pose().pushPose();
-        g.pose().translate(Draw.snap(cx - w / 2f), Draw.snap(cy - 4f), 0);
-        font().drawInBatch8xOutline(seq, 0, 0, color, outline, g.pose().last().pose(), g.bufferSource(), LightTexture.FULL_BRIGHT);
-        if (flush) g.flush();
-        g.pose().popPose();
-    }
-
-    /**
      * Development check of the room texts get (devtest {@code FitAuditTest}): null in play, so nothing is measured. The
      * probe learns the place from the call stack.
      */
@@ -93,14 +77,6 @@ public final class DrawText {
 
     public static void room(String text, float room) {
         if (probe != null) probe.report(text, width(text), room);
-    }
-
-    /** The first variant that fits {@code maxWidth} as it is, else the last one shortened (longest variant first). */
-    public static String fitFirst(int maxWidth, String... variants) {
-        for (int i = 0; i < variants.length - 1; i++) {
-            if (width(variants[i]) <= maxWidth) return fit(variants[i], maxWidth);
-        }
-        return fit(variants[variants.length - 1], maxWidth);
     }
 
     /** Shortens a string with an ellipsis to fit {@code maxWidth}. */

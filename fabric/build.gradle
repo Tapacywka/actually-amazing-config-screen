@@ -76,7 +76,7 @@ tasks.named('remapJar') {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    // Full debug information, as in Teyvat Cartographia: Sinytra Connector's mixin adapter needs the local variable
-    // tables when the Fabric JAR runs on NeoForge.
-    options.debugOptions.debugLevel = 'source,lines,vars'
+    // Source file names and line numbers, no tables of local variable names: the library has no mixins, the only
+    // classes Sinytra Connector needs them in (03.11.2026, about 17 KB less).
+    options.debugOptions.debugLevel = 'source,lines'
 }

@@ -70,9 +70,6 @@ final class ScrollTooltip {
         return owner != null;
     }
 
-    Object owner() {
-        return owner;
-    }
 
     /** The description is taller than its room: it scrolls and holds the pointer. */
     boolean scrolls() {
