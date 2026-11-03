@@ -74,13 +74,6 @@ public final class DrawText {
         text(g, text, right - visualWidth(text), y, color, shadow);
     }
 
-    /** Map-label text: light fill with a dark 8-direction outline, centred at (cx, cy). */
-    public static void textOutlined(GuiGraphicsExtractor g, Component text, float cx, float cy, int color, int outline) {
-        FormattedCharSequence seq = text.getVisualOrderText();
-        float w = Math.max(0, font().width(seq) - 1); // visible glyph width (no trailing advance)
-        draw(g, seq, Draw.snap(cx - w / 2f), Draw.snap(cy - 4f), color, false, outline, true);
-    }
-
     /**
      * Development check of the room texts get (devtest {@code FitAuditTest}): null in play, so nothing is measured. The
      * probe learns the place from the call stack.
@@ -99,14 +92,6 @@ public final class DrawText {
 
     public static void room(String text, float room) {
         if (probe != null) probe.report(text, width(text), room);
-    }
-
-    /** The first variant that fits {@code maxWidth} as it is, else the last one shortened (longest variant first). */
-    public static String fitFirst(int maxWidth, String... variants) {
-        for (int i = 0; i < variants.length - 1; i++) {
-            if (width(variants[i]) <= maxWidth) return fit(variants[i], maxWidth);
-        }
-        return fit(variants[variants.length - 1], maxWidth);
     }
 
     /** Shortens a string with an ellipsis to fit {@code maxWidth}. */

@@ -17,11 +17,6 @@ public record Tex(GpuTextureView view, GpuSampler sampler) {
         return new Tex(view, RenderSystem.getSamplerCache().getClampToEdge(linear ? FilterMode.LINEAR : FilterMode.NEAREST));
     }
 
-    /** A texture repeated over the area it is drawn on (the fog of war). */
-    public static Tex repeated(GpuTextureView view, boolean linear) {
-        return new Tex(view, RenderSystem.getSamplerCache().getRepeat(linear ? FilterMode.LINEAR : FilterMode.NEAREST));
-    }
-
     public static Tex clamped(AbstractTexture texture, boolean linear) {
         return clamped(texture.getTextureView(), linear);
     }

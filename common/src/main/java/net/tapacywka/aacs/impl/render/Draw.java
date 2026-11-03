@@ -228,24 +228,6 @@ public final class Draw {
         endColor(g, b);
     }
 
-    public static void gradientRectV(GuiGraphicsExtractor g, float x0, float y0, float x1, float y1, int top, int bottom) {
-        Matrix3x2fc m = mat(g);
-        x0 = snap(x0); y0 = snap(y0); x1 = snap(x1); y1 = snap(y1);
-        Mesh b = beginColor();
-        vtx(b, m, x0, y0, top); vtx(b, m, x0, y1, bottom); vtx(b, m, x1, y1, bottom);
-        vtx(b, m, x0, y0, top); vtx(b, m, x1, y1, bottom); vtx(b, m, x1, y0, top);
-        endColor(g, b);
-    }
-
-    public static void gradientRectH(GuiGraphicsExtractor g, float x0, float y0, float x1, float y1, int left, int right) {
-        Matrix3x2fc m = mat(g);
-        x0 = snap(x0); y0 = snap(y0); x1 = snap(x1); y1 = snap(y1);
-        Mesh b = beginColor();
-        vtx(b, m, x0, y0, left); vtx(b, m, x0, y1, left); vtx(b, m, x1, y1, right);
-        vtx(b, m, x0, y0, left); vtx(b, m, x1, y1, right); vtx(b, m, x1, y0, right);
-        endColor(g, b);
-    }
-
     private static int cornerSegments(float r) {
         return r <= 0 ? 0 : Math.max(3, Math.min(16, (int) (r * guiScale() / 2f) + 2));
     }
@@ -419,104 +401,8 @@ public final class Draw {
         fillConvex(g, n, argb);
     }
 
-    /**
-     * Annulus with a radial gradient (inner colour at rInner, outer colour at rOuter). Used for glows and
-     * vignettes: soft by design, so it is not feathered.
-     */
-    public static void ring(GuiGraphicsExtractor g, float cx, float cy, float rInner, float rOuter, int inner, int outer) {
-        int seg = Math.min(MAX_POLY, segmentsFor(rOuter));
-        float[] cs = cosTable(seg), sn = sinTable(seg);
-        Matrix3x2fc m = mat(g);
-        Mesh b = beginColor();
-        for (int i = 0; i < seg; i++) {
-            float c0 = cs[i], s0 = sn[i], c1 = cs[i + 1], s1 = sn[i + 1];
-            if (rInner <= 0f) {
-                vtx(b, m, cx, cy, inner);
-                vtx(b, m, cx + c0 * rOuter, cy + s0 * rOuter, outer);
-                vtx(b, m, cx + c1 * rOuter, cy + s1 * rOuter, outer);
-            } else {
-                vtx(b, m, cx + c0 * rInner, cy + s0 * rInner, inner);
-                vtx(b, m, cx + c0 * rOuter, cy + s0 * rOuter, outer);
-                vtx(b, m, cx + c1 * rOuter, cy + s1 * rOuter, outer);
-                vtx(b, m, cx + c0 * rInner, cy + s0 * rInner, inner);
-                vtx(b, m, cx + c1 * rOuter, cy + s1 * rOuter, outer);
-                vtx(b, m, cx + c1 * rInner, cy + s1 * rInner, inner);
-            }
-        }
-        endColor(g, b);
-    }
-
-    /**
-     * Square counterpart of {@link #ring}: the band between the squares of half sizes {@code rInner} and
-     * {@code rOuter} around (cx, cy), with mitred corners so the gradient does not double up there.
-     */
-    public static void squareRing(GuiGraphicsExtractor g, float cx, float cy, float rInner, float rOuter, int inner, int outer) {
-        Matrix3x2fc m = mat(g);
-        Mesh b = beginColor();
-        for (int side = 0; side < 4; side++) {
-            float ix0 = cx + SQUARE_X[side] * rInner, iy0 = cy + SQUARE_Y[side] * rInner;
-            float ix1 = cx + SQUARE_X[side + 1] * rInner, iy1 = cy + SQUARE_Y[side + 1] * rInner;
-            float ox0 = cx + SQUARE_X[side] * rOuter, oy0 = cy + SQUARE_Y[side] * rOuter;
-            float ox1 = cx + SQUARE_X[side + 1] * rOuter, oy1 = cy + SQUARE_Y[side + 1] * rOuter;
-            vtx(b, m, ix0, iy0, inner); vtx(b, m, ox0, oy0, outer); vtx(b, m, ox1, oy1, outer);
-            vtx(b, m, ix0, iy0, inner); vtx(b, m, ox1, oy1, outer); vtx(b, m, ix1, iy1, inner);
-        }
-        endColor(g, b);
-    }
-
     /** Unit square corners, clockwise from the top left (the first repeated at the end). Read only. */
     public static final float[] SQUARE_X = {-1, 1, 1, -1, -1}, SQUARE_Y = {-1, -1, 1, 1, -1};
-
-    /** Crisp anti-aliased circle outline of the given thickness centred on radius r. */
-    public static void circleOutline(GuiGraphicsExtractor g, float cx, float cy, float r, float thickness, int argb) {
-        int n = Math.min(MAX_POLY, segmentsFor(r + thickness));
-        float[] cs = cosTable(n), sn = sinTable(n);
-        float ro = r + thickness / 2f, ri = Math.max(0, r - thickness / 2f);
-        for (int i = 0; i < n; i++) {
-            CX[i] = cx + cs[i] * ro;
-            CY[i] = cy + sn[i] * ro;
-            BX[i] = cx + cs[i] * ri;
-            BY[i] = cy + sn[i] * ri;
-        }
-        band(g, CX, CY, BX, BY, n, argb);
-    }
-
-    /** Pie slice (e.g. the view cone): angle in radians, 0 = up (screen -Y), clockwise positive. Soft gradient. */
-    public static void sector(GuiGraphicsExtractor g, float cx, float cy, float r, float centerAngle, float halfWidth, int centerColor, int edgeColor) {
-        int seg = 32;
-        Matrix3x2fc m = mat(g);
-        Mesh b = beginColor();
-        for (int i = 0; i < seg; i++) {
-            float a0 = centerAngle - halfWidth + 2 * halfWidth * i / seg;
-            float a1 = centerAngle - halfWidth + 2 * halfWidth * (i + 1) / seg;
-            vtx(b, m, cx, cy, centerColor);
-            vtx(b, m, cx + (float) Math.sin(a0) * r, cy - (float) Math.cos(a0) * r, edgeColor);
-            vtx(b, m, cx + (float) Math.sin(a1) * r, cy - (float) Math.cos(a1) * r, edgeColor);
-        }
-        endColor(g, b);
-    }
-
-    /**
-     * Arc of a ring (thickness centred on radius r) from angle {@code a0} to {@code a1}, radians, same convention as
-     * {@link #sector}: 0 = up, clockwise positive.
-     */
-    public static void arc(GuiGraphicsExtractor g, float cx, float cy, float r, float thickness, float a0, float a1, int argb) {
-        int seg = Math.max(4, Math.min(48, (int) (Math.abs(a1 - a0) * r * guiScale() / 3f) + 4));
-        float ro = r + thickness / 2f, ri = Math.max(0, r - thickness / 2f);
-        Matrix3x2fc m = mat(g);
-        Mesh b = beginColor();
-        for (int i = 0; i < seg; i++) {
-            float t0 = a0 + (a1 - a0) * i / seg, t1 = a0 + (a1 - a0) * (i + 1) / seg;
-            float s0 = (float) Math.sin(t0), c0 = (float) -Math.cos(t0), s1 = (float) Math.sin(t1), c1 = (float) -Math.cos(t1);
-            vtx(b, m, cx + s0 * ri, cy + c0 * ri, argb);
-            vtx(b, m, cx + s0 * ro, cy + c0 * ro, argb);
-            vtx(b, m, cx + s1 * ro, cy + c1 * ro, argb);
-            vtx(b, m, cx + s0 * ri, cy + c0 * ri, argb);
-            vtx(b, m, cx + s1 * ro, cy + c1 * ro, argb);
-            vtx(b, m, cx + s1 * ri, cy + c1 * ri, argb);
-        }
-        endColor(g, b);
-    }
 
     /** Diamond (square rotated 45 deg) with half-diagonal r. */
     public static void diamond(GuiGraphicsExtractor g, float cx, float cy, float r, int argb) {
@@ -532,24 +418,6 @@ public final class Draw {
         CX[0] = cx; CY[0] = cy - r; CX[1] = cx + r; CY[1] = cy; CX[2] = cx; CY[2] = cy + r; CX[3] = cx - r; CY[3] = cy;
         BX[0] = cx; BY[0] = cy - ri; BX[1] = cx + ri; BY[1] = cy; BX[2] = cx; BY[2] = cy + ri; BX[3] = cx - ri; BY[3] = cy;
         band(g, CX, CY, BX, BY, 4, argb);
-    }
-
-    /**
-     * Light added to the picture, as the path's sparkles are added to the world (the settings preview draws them the
-     * same way): triangles from (cx, cy) in {@code argb} to each pair of neighbouring rim points ({@code n} of them in
-     * {@code xs}, {@code ys}, the last joined to the first), fading to clear at the rim.
-     */
-    public static void glowFan(GuiGraphicsExtractor g, float cx, float cy, float[] xs, float[] ys, int n, int argb) {
-        Matrix3x2fc m = mat(g);
-        Mesh b = beginColor();
-        int clear = argb & 0x00FFFFFF;
-        for (int i = 0; i < n; i++) {
-            int j = (i + 1) % n;
-            vtx(b, m, cx, cy, argb);
-            vtx(b, m, xs[i], ys[i], clear);
-            vtx(b, m, xs[j], ys[j], clear);
-        }
-        submit(g, Shape.of(b, Pipelines.COLOR_ADD, TextureSetup.noTexture(), false, scissor(g)));
     }
 
     public static void triangle(GuiGraphicsExtractor g, float x1, float y1, float x2, float y2, float x3, float y3, int argb) {
@@ -623,42 +491,18 @@ public final class Draw {
         fillConvexInto(b, m, 4, argb);
     }
 
-    /**
-     * Many axis-aligned rectangles in one draw call: {@code rects} holds x0, y0, x1, y1 per rectangle and
-     * {@code colors} one ARGB colour each (e.g. the map grid).
-     */
-    public static void rects(GuiGraphicsExtractor g, float[] rects, int[] colors, int count) {
-        if (count <= 0) return;
-        Matrix3x2fc m = mat(g);
-        Mesh b = beginColor();
-        for (int i = 0; i < count; i++) {
-            quad(b, m, snap(rects[i * 4]), snap(rects[i * 4 + 1]), snap(rects[i * 4 + 2]), snap(rects[i * 4 + 3]), colors[i]);
-        }
-        endColor(g, b);
-    }
-
     // ================================================================== textures
 
     /**
-     * Whether unrotated icons are moved onto the physical pixel grid. Off while drawing pins over a smoothly moving
-     * picture (the minimap): snapped, they shook by a pixel against the ground under them.
-     */
-    private static boolean snapIcons = true;
-
-    public static void snapIcons(boolean on) {
-        snapIcons = on;
-    }
-
-    /**
      * Draws an atlas icon centred at (cx, cy) in a square of {@code size} GUI units, tinted with {@code argb},
-     * rotated by {@code angle} radians clockwise. Unrotated icons are aligned to the physical pixel grid (see {@link #snapIcons}).
+     * rotated by {@code angle} radians clockwise. Unrotated icons are aligned to the physical pixel grid.
      */
     public static void icon(GuiGraphicsExtractor g, Icon icon, float cx, float cy, float size, int argb, float angle) {
         float h = size / 2f;
         float[] x = IX, y = IY; // scratch (4 entries)
         if (angle == 0f) {
             float s = Math.max(px(), snap(size));
-            float x0 = snapIcons ? snap(cx - s / 2f) : cx - s / 2f, y0 = snapIcons ? snap(cy - s / 2f) : cy - s / 2f;
+            float x0 = snap(cx - s / 2f), y0 = snap(cy - s / 2f);
             x[0] = x0; y[0] = y0; x[1] = x0; y[1] = y0 + s; x[2] = x0 + s; y[2] = y0 + s; x[3] = x0 + s; y[3] = y0;
         } else {
             float c = (float) Math.cos(angle), sn = (float) Math.sin(angle);
@@ -716,8 +560,4 @@ public final class Draw {
         return mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
-    public static boolean inCircle(double mx, double my, float cx, float cy, float r) {
-        double dx = mx - cx, dy = my - cy;
-        return dx * dx + dy * dy <= r * r;
-    }
 }

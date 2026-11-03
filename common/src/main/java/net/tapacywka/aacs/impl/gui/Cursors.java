@@ -29,7 +29,7 @@ public final class Cursors {
 
     /** The shapes, by priority: a part asks for one and the strongest of the frame wins. */
     public enum Shape {
-        DEFAULT(0), LOADING(1), HAND(2), TEXT(2), UNAVAILABLE(2), RESIZE_V(2), RESIZE_H(2), MOVE(3);
+        DEFAULT(0), HAND(2), TEXT(2), UNAVAILABLE(2), RESIZE_V(2), RESIZE_H(2);
 
         final int priority;
         long handle; // the system cursor, 0 for the vanilla pointer (not made yet, or its mask is missing)

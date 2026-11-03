@@ -69,12 +69,6 @@ public final class ChipField {
         return box.isFocused();
     }
 
-    /** Puts the cursor at the end of the text. */
-    public void focus() {
-        box.setFocused(true);
-        box.moveCursorToEnd(false);
-    }
-
     public void blur() {
         box.setFocused(false);
     }

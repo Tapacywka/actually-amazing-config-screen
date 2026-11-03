@@ -9,6 +9,9 @@ on Fabric.
 
 ## [Unreleased]
 
+### Changed
+- A smaller file: unused drawing code and cursors removed, no local variable names in the classes.
+
 ### Fixed
 - The rounded style: a lighter line no longer runs down the middle of the scroll bars.
 

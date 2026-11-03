@@ -77,18 +77,6 @@ public final class Backdrop {
         Draw.texturedQuadPremultiplied(g, steps[shownStep].tex(), x0, y0, x1, y1, x0 / gw, CachedLayer.v(1 - y0 / gh), x1 / gw, CachedLayer.v(1 - y1 / gh));
     }
 
-    /** The blurred backdrop over a triangle (a callout's pointer). */
-    public static void drawTriangle(GuiGraphicsExtractor g, float x1, float y1, float x2, float y2, float x3, float y3) {
-        if (!ready) return;
-        float gw = g.guiWidth(), gh = g.guiHeight();
-        Mesh b = Draw.beginTex();
-        org.joml.Matrix3x2fc m = g.pose();
-        Draw.vtx(b, m, x1, y1, x1 / gw, CachedLayer.v(1 - y1 / gh), 0xFFFFFFFF);
-        Draw.vtx(b, m, x2, y2, x2 / gw, CachedLayer.v(1 - y2 / gh), 0xFFFFFFFF);
-        Draw.vtx(b, m, x3, y3, x3 / gw, CachedLayer.v(1 - y3 / gh), 0xFFFFFFFF);
-        Draw.endPremultiplied(g, b, steps[shownStep].tex());
-    }
-
     /** Frees the copies (the screen is closed). */
     public static void dispose() {
         for (int i = 0; i < MAX_STEPS; i++) {
