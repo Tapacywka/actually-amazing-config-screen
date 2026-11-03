@@ -9,6 +9,9 @@ on Fabric.
 
 ## [Unreleased]
 
+### Fixed
+- The rounded style: a lighter line no longer runs down the middle of the scroll bars.
+
 ## [0.1.0-beta.2] - 2026-11-02
 
 ### Added
