@@ -9,6 +9,10 @@ on Fabric.
 
 ## [Unreleased]
 
+## [0.1.0-beta.3] - 2026-11-03
+
+A beta for every game: Minecraft 1.21.1, 26.1.2, 26.2 and 26.3, on Fabric and NeoForge.
+
 ### Changed
 - A smaller file: unused drawing code and cursors removed, no local variable names in the classes.
 
@@ -44,6 +48,7 @@ on Fabric.
 - Sub-sections from other mods: a mod opens a tab to them, and another mod adds its own sub-section there with its
   own settings, shown by name after the tab's own rows (optionally only while a condition holds).
 
-[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v0.1.0-beta.2...HEAD
+[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v0.1.0-beta.3...HEAD
+[0.1.0-beta.3]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v0.1.0-beta.2...v0.1.0-beta.3
 [0.1.0-beta.2]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v0.1.0-beta.1...v0.1.0-beta.2
 [0.1.0-beta.1]: https://github.com/Tapacywka/actually-amazing-config-screen/releases/tag/v0.1.0-beta.1
