@@ -8,7 +8,7 @@
   <a href="https://modrinth.com/mod/actually-amazing-config-screen"><img src="https://img.shields.io/modrinth/dt/actually-amazing-config-screen?style=flat&logo=modrinth&label=modrinth&color=00AF5C" alt="Modrinth downloads"></a>
   <a href="https://www.curseforge.com/minecraft/mc-mods/actually-amazing-config-screen"><img src="https://img.shields.io/curseforge/dt/1779712?style=flat&logo=curseforge&label=curseforge&color=F16436" alt="CurseForge downloads"></a>
   <a href="https://github.com/Tapacywka/actually-amazing-config-screen/releases"><img src="https://img.shields.io/github/downloads/Tapacywka/actually-amazing-config-screen/total?style=flat&logo=github&label=downloads&color=4C9F70" alt="GitHub downloads"></a>
-  <a href="https://github.com/Tapacywka/actually-amazing-config-screen/releases"><img src="https://img.shields.io/github/v/release/Tapacywka/actually-amazing-config-screen?include_prereleases&style=flat&label=release&color=E6B85C" alt="Latest release"></a>
+  <a href="https://github.com/Tapacywka/actually-amazing-config-screen/releases"><img src="https://img.shields.io/github/v/release/Tapacywka/actually-amazing-config-screen?style=flat&label=release&color=E6B85C" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/side-client-5B8DEF?style=flat" alt="Client side">
   <a href="https://github.com/Tapacywka/actually-amazing-config-screen/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-8A8F98?style=flat" alt="MIT license"></a>
 </p>
@@ -64,7 +64,7 @@ settings button of each such mod opens its screen.
 ## For mod authors
 
 > [!NOTE]
-> Early development: the API in `net.tapacywka.aacs.api` may still grow and change before 1.0.0. Older methods are
+> Since 1.0.0 the API in `net.tapacywka.aacs.api` is stable: it only grows, and older methods are
 > kept working (marked `@Deprecated`) rather than removed, because the loader keeps only the newest copy of the library
 > among all the mods that embed it. `Aacs.API_VERSION` tells which version is running.
 
@@ -79,10 +79,10 @@ repositories {
 dependencies {
     // The game after +mc: 1.21.1, 26.1.2, 26.2 or 26.3 (on 26.x Loom takes implementation, not modImplementation)
     // Fabric (Loom)
-    modImplementation 'maven.modrinth:actually-amazing-config-screen:0.1.0-beta.3+mc1.21.1-fabric'
-    include 'maven.modrinth:actually-amazing-config-screen:0.1.0-beta.3+mc1.21.1-fabric'
+    modImplementation 'maven.modrinth:actually-amazing-config-screen:1.0.0+mc1.21.1-fabric'
+    include 'maven.modrinth:actually-amazing-config-screen:1.0.0+mc1.21.1-fabric'
     // NeoForge (ModDevGradle)
-    jarJar(implementation('maven.modrinth:actually-amazing-config-screen:0.1.0-beta.3+mc1.21.1-neoforge'))
+    jarJar(implementation('maven.modrinth:actually-amazing-config-screen:1.0.0+mc1.21.1-neoforge'))
 }
 ```
 
