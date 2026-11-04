@@ -12,7 +12,8 @@ public final class Aacs {
     /**
      * The version of the public API, raised with every addition. The loader keeps only the newest copy of the library
      * embedded in the mods of a game, so a newer one keeps every older method working; a mod built against version
-     * {@code n} may check {@code API_VERSION >= n} before using what came with it.
+     * {@code n} may check {@code API_VERSION >= n} before using what came with it. 3: rows with an
+     * action ({@link AacsScreen.Tab#action}).
      */
-    public static final int API_VERSION = 2;
+    public static final int API_VERSION = 3;
 }

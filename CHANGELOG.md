@@ -9,6 +9,10 @@ on Fabric.
 
 ## [Unreleased]
 
+### Added
+- A row with an action (`Tab.action`): its name on the left, a short muted link with an arrow on the right (gold under
+  the pointer) that hands the settings screen to the mod, say to open a window of its own. API version 3.
+
 ## [1.0.0] - 2026-11-03
 
 The first stable version, for Minecraft 1.21.1, 26.1.2, 26.2 and 26.3, on Fabric and NeoForge.

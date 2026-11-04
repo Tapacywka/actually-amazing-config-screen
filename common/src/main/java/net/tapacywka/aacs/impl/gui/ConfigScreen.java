@@ -124,6 +124,7 @@ public final class ConfigScreen extends Screen {
                     case TOGGLE_LIST -> new ListRow(r.key(), cast(r.get()), cast(r.set()), cast(r.options()));
                     case SLIDER -> new SliderRow(r.key(), cast(r.options()), cast(r.get()), cast(r.set()));
                     case CHOICE -> new ChoiceRow<>(r.key(), cast(r.options()), cast(r.get()), cast(r.set()));
+                    case ACTION -> new ActionRow(r.key(), (String) r.options(), cast(r.set()));
                 };
                 row.value = r.value();
                 // The row's own picture, else its tab's; none (only the description) for NONE or without either.
@@ -402,6 +403,59 @@ public final class ConfigScreen extends Screen {
             if (!Ui.toggleHit(tx(x, w), ty(), mx, my)) return false;
             set.accept(!get.get());
             changed();
+            return true;
+        }
+    }
+
+    /**
+     * An action ({@link AacsScreen.Tab#action}): the button's text in the reset icon's colours (muted, gold under the pointer) at the right end of an ordinary row, a small
+     * arrow after it, underlined under the pointer (user choices 04.11.2026: a full button did not fit among the
+     * settings); a click hands this screen to the mod.
+     */
+    private final class ActionRow extends Row {
+        /** Room of the arrow after the text. */
+        private static final int ARROW = 6;
+        final Component button;
+        final Consumer<Screen> onClick;
+
+        ActionRow(String key, String buttonKey, Consumer<Screen> onClick) {
+            super(Component.translatable(key), Component.translatable(key + ".tooltip"));
+            this.button = Component.translatable(buttonKey);
+            this.onClick = onClick;
+        }
+
+        @Override
+        float controlLeft(float x, float w) {
+            return x + w - ARROW - Grid.GAP - DrawText.width(button);
+        }
+
+        private boolean over(float x, float w, double mx, double my) {
+            float left = controlLeft(x, w) - Grid.GAP;
+            return Draw.inRect(mx, my, left, y, x + w - left, Grid.ROW);
+        }
+
+        @Override
+        void renderLabel(GuiGraphicsExtractor g, float x, float w) {
+            DrawText.text(g, DrawText.fit(label.getString(), (int) (controlLeft(x, w) - x - 2 * Grid.GAP)), x, DrawText.textY(y, Grid.ROW), Theme.WHITE, false);
+        }
+
+        @Override
+        void render(GuiGraphicsExtractor g, float x, float w, int mx, int my) {
+            renderLabel(g, x, w);
+            boolean hover = over(x, w, mx, my);
+            if (hover) Cursors.want(Cursors.Shape.HAND);
+            int colour = hover ? Theme.GOLD : Theme.TEXT_MUTED;
+            float tx = controlLeft(x, w), ty = DrawText.textY(y, Grid.ROW);
+            DrawText.text(g, button, tx, ty, colour, false);
+            if (hover) Draw.rect(g, tx, ty + 9, tx + DrawText.width(button), ty + 10, colour);
+            float ax = x + w - 3, ay = y + Grid.ROW / 2f;
+            Draw.triangle(g, ax - 1.5f, ay - 3, ax - 1.5f, ay + 3, ax + 2f, ay, colour);
+        }
+
+        @Override
+        boolean click(double mx, double my, float x, float w) {
+            if (!over(x, w, mx, my)) return false;
+            onClick.accept(ConfigScreen.this);
             return true;
         }
     }
