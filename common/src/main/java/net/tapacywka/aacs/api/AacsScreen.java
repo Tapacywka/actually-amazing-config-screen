@@ -337,6 +337,15 @@ public final class AacsScreen {
         }
 
         /**
+         * A row with an action in place of a control (since API 3), a short link at its right end: {@code key} its name
+         * and description as for any row, {@code buttonKey} the link's text; {@code onClick} gets the settings screen, to open a screen of the
+         * mod's own over it (an import, say). Holds no setting: no reset icon.
+         */
+        public Tab action(String key, String buttonKey, Consumer<Screen> onClick) {
+            return add(Row.Kind.ACTION, key, null, onClick, null, buttonKey);
+        }
+
+        /**
          * A switch with a list under it, opened by an arrow beside the switch while it is on (Teyvat Cartographia's
          * plants): {@code entries} what the list shows, {@code off} the ids switched off, {@code onClosed} run when
          * the list closes after a change (to redraw what it affects), or null.
@@ -544,6 +553,6 @@ public final class AacsScreen {
      */
     public record Row(Kind kind, String key, String subSection, Supplier<?> get, Consumer<?> set, Component label,
                       Value<?> value, Object options, Preview preview, Runnable then) {
-        public enum Kind { SECTION, SUB_SECTION, TOGGLE, TOGGLE_LIST, SLIDER, CHOICE }
+        public enum Kind { SECTION, SUB_SECTION, TOGGLE, TOGGLE_LIST, SLIDER, CHOICE, ACTION }
     }
 }
