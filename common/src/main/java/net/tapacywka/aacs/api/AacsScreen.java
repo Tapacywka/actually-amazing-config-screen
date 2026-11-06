@@ -445,9 +445,9 @@ public final class AacsScreen {
         /** Draws the picture of {@code row} (its lang key) in the area, clipped to it. */
         void draw(GuiGraphics g, String row, float x, float y, float w, float h, float partialTick);
 
-        /** Whether the card writes "name: value" under the picture; off by default (a picture may have captions of its own). */
+        /** Whether the card writes "name: value" under the picture; false for a picture with captions of its own. */
         default boolean caption(String row) {
-            return false;
+            return true;
         }
     }
 
