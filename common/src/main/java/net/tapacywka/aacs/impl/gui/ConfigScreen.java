@@ -408,9 +408,10 @@ public final class ConfigScreen extends Screen {
     }
 
     /**
-     * An action ({@link AacsScreen.Tab#action}): the button's text in the reset icon's colours (muted, gold under the pointer) at the right end of an ordinary row, a small
-     * arrow after it, underlined under the pointer (user choices 04.11.2026: a full button did not fit among the
-     * settings); a click hands this screen to the mod.
+     * An action ({@link AacsScreen.Tab#action}): the button's text in white (gold under the pointer) at the right end
+     * of an ordinary row, a small arrow after it, underlined under the pointer (user choices 04.11.2026: a full button
+     * did not fit among the settings; white since 08.11.2026, muted it looked switched off); a click hands this screen
+     * to the mod.
      */
     private final class ActionRow extends Row {
         /** Room of the arrow after the text. */
@@ -444,7 +445,7 @@ public final class ConfigScreen extends Screen {
             renderLabel(g, x, w);
             boolean hover = over(x, w, mx, my);
             if (hover) Cursors.want(Cursors.Shape.HAND);
-            int colour = hover ? Theme.GOLD : Theme.TEXT_MUTED;
+            int colour = hover ? Theme.GOLD : Theme.WHITE;
             float tx = controlLeft(x, w), ty = DrawText.textY(y, Grid.ROW);
             DrawText.text(g, button, tx, ty, colour, false);
             if (hover) Draw.rect(g, tx, ty + 9, tx + DrawText.width(button), ty + 10, colour);
@@ -663,6 +664,7 @@ public final class ConfigScreen extends Screen {
         panelH = height - 2 * Grid.MARGIN;
         listTop = tabs.size() > 1 ? tabY() + TAB_H + Grid.GAP : panelY + Grid.HEADER_H + Grid.GAP;
         listBottom = footerY() - Grid.PAD;
+        measureTabs();
     }
 
     private float contentX() {
@@ -747,27 +749,128 @@ public final class ConfigScreen extends Screen {
         }
     }
 
-    // ------------------------------------------------------------------ tabs: widths follow their titles
+    // ------------------------------------------------------------------ tabs: widths follow their titles; a strip that
+    // scrolls between two arrows when they do not fit (user request 08.11.2026)
+
+    /** How far the dissolving ends of the strip of tabs reach, GUI units: a tab's room beside its title. */
+    private static final float TAB_FADE = 2 * Grid.GAP;
+    /** How far the strip of tabs is scrolled (only while they do not fit), eased like the list. */
+    private final SmoothScroll tabScroller = new SmoothScroll();
+    private float tabScroll;
+    /** The shown tab was brought into view since the screen was laid out (opened, resized). */
+    private boolean tabsPlaced;
 
     private float tabY() {
         return panelY + Grid.HEADER_H + Grid.GAP;
     }
 
-    private float tabNeed(int i) {
-        return DrawText.width(Component.translatable(spec.tabs.get(i).key)) + 4 * Grid.GAP;
+    /**
+     * Each tab as wide as its title needs, and whether they all fit in the row so (no arrows then, the tabs share the
+     * row): measured by {@link #measureTabs}.
+     */
+    private float[] needs = new float[0];
+    private boolean fit = true;
+
+    /** Measures the tabs (in {@link #layout}, once a frame: the language may have changed). */
+    private void measureTabs() {
+        if (needs.length != tabs.size()) needs = new float[tabs.size()];
+        for (int i = 0; i < needs.length; i++) needs[i] = DrawText.width(Component.translatable(spec.tabs.get(i).key)) + 4 * Grid.GAP;
+        fit = TabStrip.length(needs, Grid.GAP) <= contentW() + 0.01f;
+    }
+
+    /** The view of the strip between the arrows. */
+    private float stripX0() {
+        return contentX() + TAB_H + Grid.GAP;
+    }
+
+    private float stripX1() {
+        return contentX() + contentW() - TAB_H - Grid.GAP;
+    }
+
+    private float tabsMax() {
+        return TabStrip.max(needs, Grid.GAP, stripX1() - stripX0());
     }
 
     private float tabW(int i) {
-        float gaps = (tabs.size() - 1) * Grid.GAP, need = 0;
-        for (int k = 0; k < tabs.size(); k++) need += tabNeed(k);
-        float room = contentW() - gaps;
-        return room >= need ? tabNeed(i) + (room - need) / tabs.size() : tabNeed(i) * room / need;
+        if (!fit) return needs[i];
+        float room = contentW() - (tabs.size() - 1) * Grid.GAP;
+        return needs[i] + (room - TabStrip.length(needs, 0)) / tabs.size();
     }
 
     private float tabX(int i) {
-        float x = contentX();
+        float x = fit ? contentX() : stripX0() - tabScroll;
         for (int k = 0; k < i; k++) x += tabW(k) + Grid.GAP;
         return x;
+    }
+
+    /** Tab {@code i} is under the pointer: on the row, and within the strip's view while it scrolls. */
+    private boolean tabHit(int i, double mx, double my) {
+        return Draw.inRect(mx, my, tabX(i), tabY(), tabW(i), TAB_H) && (fit || mx >= stripX0() && mx < stripX1());
+    }
+
+    /** The left arrow ({@code dir} -1) or the right one (1). */
+    private float arrowX(int dir) {
+        return dir < 0 ? contentX() : contentX() + contentW() - TAB_H;
+    }
+
+    /** The strip one tab further ({@code dir} 1) or back (-1). */
+    private void stepTabs(int dir) {
+        float[] starts = TabStrip.starts(needs, Grid.GAP);
+        float max = tabsMax(), at = tabScroller.target();
+        tabScroller.to(dir > 0 ? TabStrip.next(at, starts, max) : TabStrip.previous(at, starts, max));
+    }
+
+    /** The strip scrolled as little as it takes to show tab {@code i} whole; at once when {@code jump}. */
+    private void revealTab(int i, boolean jump) {
+        float to = TabStrip.reveal(tabScroller.target(), TabStrip.starts(needs, Grid.GAP)[i], needs[i], stripX1() - stripX0(), tabsMax());
+        if (jump) tabScroller.jump(to);
+        else tabScroller.to(to);
+    }
+
+    /**
+     * The tabs: sharing the row while they fit; else each as wide as its title, in a strip between two arrows that
+     * dissolves at its ends where more tabs lie beyond (drawn into a layer of its own, as the list's rows).
+     */
+    private void renderTabs(GuiGraphicsExtractor g, int mx, int my) {
+        if (tabs.size() < 2) return;
+        if (fit) {
+            tabScroll = 0;
+            for (int i = 0; i < tabs.size(); i++) renderTab(g, i, mx, my);
+            return;
+        }
+        if (!tabsPlaced) {
+            revealTab(tab, true);
+            tabsPlaced = true;
+        }
+        float max = tabsMax();
+        tabScroll = tabScroller.update(max);
+        float y = tabY(), x0 = stripX0(), x1 = stripX1();
+        int tabMx = mx >= x0 && mx < x1 ? mx : -10_000;
+        EdgeFade.capture(g);
+        g.enableScissor((int) x0, (int) y, (int) Math.ceil(x1), (int) (y + TAB_H));
+        for (int i = 0; i < tabs.size(); i++) {
+            float tx = tabX(i);
+            if (tx + tabW(i) > x0 && tx < x1) renderTab(g, i, tabMx, my);
+        }
+        g.disableScissor();
+        EdgeFade.drawSides(g, x0, x1, y, y + TAB_H, TAB_FADE, Math.min(1, tabScroll / TAB_FADE), Math.min(1, (max - tabScroll) / TAB_FADE));
+        EdgeFade.release();
+        renderArrow(g, -1, TabStrip.canPrevious(tabScroller.target()), mx, my);
+        renderArrow(g, 1, TabStrip.canNext(tabScroller.target(), max), mx, my);
+    }
+
+    /** An arrow of the strip: a tab-sized button, its triangle as a choice row's; dim at the end it cannot pass. */
+    private void renderArrow(GuiGraphicsExtractor g, int dir, boolean can, int mx, int my) {
+        float x = arrowX(dir), y = tabY();
+        boolean hover = Draw.inRect(mx, my, x, y, TAB_H, TAB_H);
+        if (hover) Cursors.want(can ? Cursors.Shape.HAND : Cursors.Shape.UNAVAILABLE);
+        int fill = can && hover ? Theme.BUTTON : Ui.inactive(Theme.BUTTON);
+        if (Theme.Style.squareUi) Draw.rect(g, x, y, x + TAB_H, y + TAB_H, fill);
+        else Draw.capsule(g, x, y, TAB_H, TAB_H, fill);
+        float cx = x + TAB_H / 2f, cy = y + TAB_H / 2f;
+        int c = can ? Theme.CREAM : Ui.inactive(Theme.CREAM);
+        if (dir < 0) Draw.triangle(g, cx - 2, cy, cx + 2, cy - 4, cx + 2, cy + 4, c);
+        else Draw.triangle(g, cx + 2, cy, cx - 2, cy - 4, cx - 2, cy + 4, c);
     }
 
     private void renderTab(GuiGraphicsExtractor g, int i, int mx, int my) {
@@ -952,7 +1055,7 @@ public final class ConfigScreen extends Screen {
         Ui.panel(g, panelX, panelY, panelW, panelH, title, titleIcon, mx, my);
         if (card) Backdrop.draw(g, cardX, panelY, cardX + cardW, panelY + panelH);
         Backdrop.release();
-        if (tabs.size() > 1) for (int i = 0; i < tabs.size(); i++) renderTab(g, i, mx, my);
+        renderTabs(g, mx, my);
         float total = total();
         scroll = scroller.update(maxScroll());
 
@@ -1024,8 +1127,15 @@ public final class ConfigScreen extends Screen {
         }
         // A scrolling tooltip takes the clicks on it (its bar), none reach the rows under it.
         if (!card && tip.click(mx, my)) return true;
+        boolean strip = tabs.size() > 1 && !fit;
+        for (int dir = -1; strip && dir <= 1; dir += 2) {
+            if (Draw.inRect(mx, my, arrowX(dir), tabY(), TAB_H, TAB_H)) {
+                stepTabs(dir);
+                return true;
+            }
+        }
         for (int i = 0; tabs.size() > 1 && i < tabs.size(); i++) {
-            if (Draw.inRect(mx, my, tabX(i), tabY(), tabW(i), TAB_H)) {
+            if (tabHit(i, mx, my)) {
                 closeList();
                 tip.hide();
                 tab = i;
@@ -1033,6 +1143,7 @@ public final class ConfigScreen extends Screen {
                 rows = tabs.get(i);
                 scroller.jump(0);
                 scroll = 0f;
+                if (strip) revealTab(i, false); // clicked half hidden: it comes whole
                 return true;
             }
         }
@@ -1108,6 +1219,11 @@ public final class ConfigScreen extends Screen {
             return true;
         }
         if (!card && tip.scroll(mx, my, sy)) return true;
+        // Over the strip of tabs that scrolls: a tab a notch.
+        if (tabs.size() > 1 && my >= tabY() && my < tabY() + TAB_H && mx >= contentX() && mx < contentX() + contentW() && !fit) {
+            if (sy != 0) stepTabs(sy > 0 ? -1 : 1);
+            return true;
+        }
         tip.hide(); // the rows move under it
         scroller.wheel(sy, WHEEL);
         return true;
@@ -1139,6 +1255,7 @@ public final class ConfigScreen extends Screen {
      */
     @Override
     protected void init() {
+        tabsPlaced = false; // the shown tab into view again at the new size
         com.mojang.blaze3d.platform.Window window = Minecraft.getInstance().getWindow();
         int cap = scaleCap(window.getHeight());
         if (window.getGuiScale() > cap) {

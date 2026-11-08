@@ -9,6 +9,15 @@ on Fabric.
 
 ## [Unreleased]
 
+### Added
+- Tabs that do not fit in the settings panel scroll sideways: each is as wide as its title, with an arrow button at both
+  ends of the row that moves them a tab at a time (dim when there is nothing more that way); the mouse wheel over the
+  tabs does it too, and a tab clicked half hidden comes into view whole. The tabs dissolve at the ends where more of them
+  lie beyond. While they fit, nothing changes.
+
+### Changed
+- The link of a row with an action is white (gold under the pointer): grey, it looked switched off.
+
 ## [1.1.0] - 2026-11-06
 
 ### Added

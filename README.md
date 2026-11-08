@@ -39,7 +39,7 @@ settings button of each such mod opens its screen.
 
 ## What the screen does
 
-* **Tabs** as wide as their titles, **sections**, and **sub-sections that fold**.
+* **Tabs** as wide as their titles (more than fit scroll between two arrows), **sections**, and **sub-sections that fold**.
 * **Smooth scrolling** without steps: the wheel moves a row's distance, the scroll bar can be dragged freely, and rows
   cut by the edges of the list dissolve.
 * **The card beside the list**: the name and description of the setting under the pointer, and a picture of what it
