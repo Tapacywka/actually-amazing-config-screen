@@ -39,7 +39,7 @@ settings button of each such mod opens its screen.
 
 ## What the screen does
 
-* **Tabs** as wide as their titles, **sections**, and **sub-sections that fold**.
+* **Tabs** as wide as their titles (more than fit scroll between two arrows), **sections**, and **sub-sections that fold**.
 * **Smooth scrolling** without steps: the wheel moves a row's distance, the scroll bar can be dragged freely, and rows
   cut by the edges of the list dissolve.
 * **The card beside the list**: the name and description of the setting under the pointer, and a picture of what it
@@ -80,10 +80,10 @@ repositories {
 dependencies {
     // The game after +mc: 1.21.1, 26.1.2, 26.2 or 26.3 (on 26.x Loom takes implementation, not modImplementation)
     // Fabric (Loom)
-    modImplementation 'maven.modrinth:actually-amazing-config-screen:1.1.0+mc1.21.1-fabric'
-    include 'maven.modrinth:actually-amazing-config-screen:1.1.0+mc1.21.1-fabric'
+    modImplementation 'maven.modrinth:actually-amazing-config-screen:1.2.0+mc1.21.1-fabric'
+    include 'maven.modrinth:actually-amazing-config-screen:1.2.0+mc1.21.1-fabric'
     // NeoForge (ModDevGradle)
-    jarJar(implementation('maven.modrinth:actually-amazing-config-screen:1.1.0+mc1.21.1-neoforge'))
+    jarJar(implementation('maven.modrinth:actually-amazing-config-screen:1.2.0+mc1.21.1-neoforge'))
 }
 ```
 
