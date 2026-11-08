@@ -55,10 +55,7 @@ public final class EdgeFade {
      */
     public static void draw(GuiGraphics g, float x0, float x1, float top, float bottom, float height, float topAmount, float bottomAmount) {
         if (!active) return;
-        g.flush();
-        Draw.endLayer();
-        Minecraft.getInstance().getMainRenderTarget().bindWrite(true);
-        active = false;
+        finish(g);
         var w = Minecraft.getInstance().getWindow();
         float gw = (float) (w.getWidth() / w.getGuiScale()), gh = (float) (w.getHeight() / w.getGuiScale());
         height = Math.min(height, (bottom - top) / 2);
@@ -74,6 +71,44 @@ public final class EdgeFade {
         band(b, m, 0, x0, top, bottom, gw, gh, 0xFFFFFFFF, 0xFFFFFFFF);
         band(b, m, x1, gw, top, bottom, gw, gh, 0xFFFFFFFF, 0xFFFFFFFF);
         Draw.endPremultiplied(b, rows.getColorTextureId());
+    }
+
+    /**
+     * As {@link #draw}, sideways (the strip of tabs that scrolls, 08.11.2026): lays the layer between {@code x0} and
+     * {@code x1}, {@code top} to {@code bottom}, faded over {@code width} GUI units at the left edge at strength
+     * {@code leftAmount} and at the right edge at {@code rightAmount}; nothing of the layer outside that box.
+     */
+    public static void drawSides(GuiGraphics g, float x0, float x1, float top, float bottom, float width, float leftAmount, float rightAmount) {
+        if (!active) return;
+        finish(g);
+        var w = Minecraft.getInstance().getWindow();
+        float gw = (float) (w.getWidth() / w.getGuiScale()), gh = (float) (w.getHeight() / w.getGuiScale());
+        width = Math.min(width, (x1 - x0) / 2);
+        Matrix4f m = g.pose().last().pose();
+        BufferBuilder b = Draw.beginTex();
+        for (int i = 0; i < BANDS; i++) {
+            float f0 = (float) i / BANDS, f1 = (float) (i + 1) / BANDS; // 0 at the edge, 1 where the fade ends
+            column(b, m, x0 + f0 * width, x0 + f1 * width, top, bottom, gw, gh, shown(f0, leftAmount), shown(f1, leftAmount));
+            column(b, m, x1 - f1 * width, x1 - f0 * width, top, bottom, gw, gh, shown(f1, rightAmount), shown(f0, rightAmount));
+        }
+        column(b, m, x0 + width, x1 - width, top, bottom, gw, gh, 0xFFFFFFFF, 0xFFFFFFFF);
+        Draw.endPremultiplied(b, rows.getColorTextureId());
+    }
+
+    /** Ends the layer: the screen is the draw target again. */
+    private static void finish(GuiGraphics g) {
+        g.flush();
+        Draw.endLayer();
+        Minecraft.getInstance().getMainRenderTarget().bindWrite(true);
+        active = false;
+    }
+
+    /** One upright band from {@code xa} (colour {@code ca}) to {@code xb} ({@code cb}). */
+    private static void column(BufferBuilder b, Matrix4f m, float xa, float xb, float y0, float y1, float gw, float gh, int ca, int cb) {
+        if (xb <= xa || y1 <= y0) return;
+        float ua = xa / gw, ub = xb / gw, v0 = Mods.v(1 - y0 / gh), v1 = Mods.v(1 - y1 / gh);
+        Draw.vtx(b, m, xa, y0, ua, v0, ca); Draw.vtx(b, m, xa, y1, ua, v1, ca); Draw.vtx(b, m, xb, y1, ub, v1, cb);
+        Draw.vtx(b, m, xa, y0, ua, v0, ca); Draw.vtx(b, m, xb, y1, ub, v1, cb); Draw.vtx(b, m, xb, y0, ub, v0, cb);
     }
 
     /** How much of the rows shows {@code f} of the way from the edge: all channels, faded on a smoothstep near it. */
