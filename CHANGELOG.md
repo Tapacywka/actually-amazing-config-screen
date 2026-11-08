@@ -9,6 +9,8 @@ on Fabric.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-08
+
 ### Added
 - Tabs that do not fit in the settings panel scroll sideways: each is as wide as its title, with an arrow button at both
   ends of the row that moves them a tab at a time (dim when there is nothing more that way); the mouse wheel over the
@@ -70,7 +72,8 @@ A beta for every game: Minecraft 1.21.1, 26.1.2, 26.2 and 26.3, on Fabric and Ne
 - Sub-sections from other mods: a mod opens a tab to them, and another mod adds its own sub-section there with its
   own settings, shown by name after the tab's own rows (optionally only while a condition holds).
 
-[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v0.1.0-beta.3...v1.0.0
 [0.1.0-beta.3]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v0.1.0-beta.2...v0.1.0-beta.3
