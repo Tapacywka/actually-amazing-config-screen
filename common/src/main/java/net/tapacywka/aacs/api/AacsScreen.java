@@ -429,6 +429,23 @@ public final class AacsScreen {
             more.accept(c);
             return add(Row.Kind.CHOICE, key, value::get, (String s) -> value.set(s), value, c);
         }
+
+        /**
+         * A choice with arrows among named options ("Off", "Game", "Real", "Both"): {@code optionKeys} the lang keys of
+         * the options, {@code get} and {@code set} the option (0 first) as the mod keeps it, over one value or several,
+         * as {@link #steps} does for a slider. No reset icon, as no single value stands behind it.
+         */
+        public Tab choice(String key, String[] optionKeys, IntSupplier get, IntConsumer set) {
+            return choice(key, optionKeys, get, set, c -> {});
+        }
+
+        public Tab choice(String key, String[] optionKeys, IntSupplier get, IntConsumer set, Consumer<Choice<Integer>> more) {
+            String[] keys = optionKeys.clone();
+            List<Integer> all = java.util.stream.IntStream.range(0, keys.length).boxed().toList();
+            Choice<Integer> c = new Choice<>(() -> all, i -> Component.translatable(keys[i]));
+            more.accept(c);
+            return add(Row.Kind.CHOICE, key, (Supplier<Integer>) get::getAsInt, (Integer i) -> set.accept(i), null, c);
+        }
     }
 
     /**

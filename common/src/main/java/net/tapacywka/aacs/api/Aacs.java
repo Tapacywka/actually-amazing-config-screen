@@ -13,7 +13,8 @@ public final class Aacs {
      * The version of the public API, raised with every addition. The loader keeps only the newest copy of the library
      * embedded in the mods of a game, so a newer one keeps every older method working; a mod built against version
      * {@code n} may check {@code API_VERSION >= n} before using what came with it. 3: rows with an
-     * action ({@link AacsScreen.Tab#action}).
+     * action ({@link AacsScreen.Tab#action}). 4: a choice with arrows among named options by number
+     * ({@link AacsScreen.Tab#choice(String, String[], java.util.function.IntSupplier, java.util.function.IntConsumer)}).
      */
-    public static final int API_VERSION = 3;
+    public static final int API_VERSION = 4;
 }
