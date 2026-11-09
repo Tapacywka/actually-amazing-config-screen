@@ -45,8 +45,9 @@ settings button of each such mod opens its screen.
 * **The card beside the list**: the name and description of the setting under the pointer, and a picture of what it
   does, drawn by the mod. In a window too narrow for the card, the description shows as a tooltip by the row.
 * **Rows**: switches, sliders of numbers (with a unit, fixed steps or words), choices in steps on a slider, choices
-  with arrows, a switch with a searchable list of switches under it, and a link at the right end that hands the screen
-  to the mod, say to open a window of its own.
+  with arrows (over one setting, or since 1.3.0 named options the mod keeps its own way), a switch with a searchable
+  list of switches under it, and a link at the right end that hands the screen to the mod, say to open a window of its
+  own.
 * **A reset icon** beside a setting you changed, and **Reset** and **Done** at the bottom.
 * **Rectangular or rounded** shapes, the mod's own colours and background, and the GUI scale held at a size that fits
   the window while the screen is open.
@@ -80,10 +81,10 @@ repositories {
 dependencies {
     // The game after +mc: 1.21.1, 26.1.2, 26.2 or 26.3 (on 26.x Loom takes implementation, not modImplementation)
     // Fabric (Loom)
-    modImplementation 'maven.modrinth:actually-amazing-config-screen:1.2.0+mc1.21.1-fabric'
-    include 'maven.modrinth:actually-amazing-config-screen:1.2.0+mc1.21.1-fabric'
+    modImplementation 'maven.modrinth:actually-amazing-config-screen:1.3.0+mc1.21.1-fabric'
+    include 'maven.modrinth:actually-amazing-config-screen:1.3.0+mc1.21.1-fabric'
     // NeoForge (ModDevGradle)
-    jarJar(implementation('maven.modrinth:actually-amazing-config-screen:1.2.0+mc1.21.1-neoforge'))
+    jarJar(implementation('maven.modrinth:actually-amazing-config-screen:1.3.0+mc1.21.1-neoforge'))
 }
 ```
 
