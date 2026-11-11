@@ -3,7 +3,9 @@
 </p>
 
 <p align="center">
-  <a href="https://modrinth.com/mod/actually-amazing-config-screen"><img src="https://img.shields.io/modrinth/dt/=flat&logo=modrinth&label=modrinth&color=00AF5C" alt="Modrinth downloads"></a>
+  <a href="https://modrinth.com/mod/actually-amazing-config-screen"><img src="https://img.shields.io/modrinth/dt/actually-amazing-config-screen?style=flat&logo=modrinth&label=modrinth&color=00AF5C" alt="Modrinth downloads"></a>
+  <a href="https://www.curseforge.com/minecraft/mc-mods/actually-amazing-config-screen"><img src="https://img.shields.io/curseforge/dt/1779712?style=flat&logo=curseforge&label=curseforge&color=F16436" alt="CurseForge downloads"></a>
+  <a href="https://github.com/Tapacywka/actually-amazing-config-screen/releases"><img src="https://img.shields.io/github/downloads/Tapacywka/actually-amazing-config-screen/total?style=flat&logo=github&label=downloads&color=4C9F70" alt="GitHub downloads"></a>
   <img src="https://img.shields.io/badge/side-client-5B8DEF?style=flat" alt="Client side">
   <a href="https://github.com/Tapacywka/actually-amazing-config-screen/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-8A8F98?style=flat" alt="MIT license"></a>
 </p>
@@ -15,6 +17,8 @@
 
 <p align="center">
   <a href="https://modrinth.com/mod/actually-amazing-config-screen"><img src="https://raw.githubusercontent.com/intergrav/devins-badges/v3/assets/cozy/available/modrinth_vector.svg" alt="Available on Modrinth" height="48"></a>
+  <a href="https://www.curseforge.com/minecraft/mc-mods/actually-amazing-config-screen"><img src="https://raw.githubusercontent.com/intergrav/devins-badges/v3/assets/cozy/available/curseforge_vector.svg" alt="Available on CurseForge" height="48"></a>
+  <a href="https://github.com/Tapacywka/actually-amazing-config-screen/releases"><img src="https://raw.githubusercontent.com/intergrav/devins-badges/v3/assets/cozy/available/github_vector.svg" alt="Available on GitHub" height="48"></a>
 </p>
 
 <p align="center">
