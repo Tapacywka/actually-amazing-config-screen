@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Tapacywka/actually-amazing-config-screen/main/.github/images/card.jpg" alt="A settings screen with tabs and the card explaining the setting under the pointer" width="100%">
+  <img src="https://raw.githubusercontent.com/Tapacywka/actually-amazing-config-screen/main/.github/images/settings-card.jpg" alt="A settings screen with tabs and the card explaining the setting under the pointer" width="100%">
 </p>
 
 <h2 id="players">🎮 For players</h2>
