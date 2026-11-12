@@ -9,7 +9,8 @@ import java.util.function.Supplier;
 /**
  * One setting of a {@link ConfigFile}, made by its builder: the mod keeps the reference and reads it with
  * {@link #get()}. A change acts at once (the game sees it live); the file is written when the settings screen closes
- * or when the mod calls {@link ConfigFile#save()}. Values are read and changed on the game's thread only.
+ * or when the mod calls {@link ConfigFile#save()}. Values are changed on the game's thread only; a worker thread may
+ * read one (it sees a whole value, the newest one soon after a change).
  */
 public abstract class Value<T> implements Supplier<T> {
     /** Told of a change on the game's thread, at once, with the value before and after it. */
@@ -19,7 +20,7 @@ public abstract class Value<T> implements Supplier<T> {
     }
 
     private final T def;
-    private T value;
+    private volatile T value;
     private final List<Listener<T>> listeners = new ArrayList<>(1);
     List<String> path = List.of();
     ConfigFile file;

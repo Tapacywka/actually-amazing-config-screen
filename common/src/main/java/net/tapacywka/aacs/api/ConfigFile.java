@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -124,7 +125,12 @@ public final class ConfigFile {
             Files.createDirectories(file.toAbsolutePath().getParent());
             Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
             Files.writeString(tmp, GSON.toJson(root), StandardCharsets.UTF_8);
-            Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            try {
+                Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                // A file system without atomic moves (some network drives): replaced in two steps there.
+                Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING);
+            }
             read = root;
         } catch (IOException ex) {
             LOG.warn("The settings could not be saved to {}", file, ex);
