@@ -64,9 +64,9 @@ repositories { maven { url = 'https://api.modrinth.com/maven' } }
 
 dependencies {
     // Fabric (on 26.x: implementation instead of modImplementation)
-    include(modImplementation('maven.modrinth:actually-amazing-config-screen:1.3.1+mc1.21.1-fabric'))
+    include(modImplementation('maven.modrinth:actually-amazing-config-screen:1.3.2+mc1.21.1-fabric'))
     // NeoForge
-    jarJar(implementation('maven.modrinth:actually-amazing-config-screen:1.3.1+mc1.21.1-neoforge'))
+    jarJar(implementation('maven.modrinth:actually-amazing-config-screen:1.3.2+mc1.21.1-neoforge'))
 }
 ```
 
