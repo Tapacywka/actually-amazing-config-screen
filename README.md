@@ -29,7 +29,7 @@
 
 - **Tabs and sections**: tabs as wide as their titles (they scroll when there are many), sub-sections that fold.
 - **A preview card**: point at a setting and see its name, description and a picture of what it changes. In a narrow window the description becomes a tooltip.
-- **Every kind of row**: switches, sliders with units or steps, choices with arrows, a switch with a searchable list, a button that opens your own window.
+- **Every kind of row**: switches, sliders with units or steps, choices with arrows, check boxes for the parts of one setting, a switch with a searchable list, a button that opens your own window.
 - **Smooth everything**: scrolling without steps, rows that fade at the edges, a reset icon beside every changed setting.
 - **Your look**: rectangular or rounded, your colours and background, kept at a readable size on any screen.
 - **Room for others**: a tab where other mods can add their own settings.

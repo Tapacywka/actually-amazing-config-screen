@@ -95,7 +95,9 @@ public final class ConfigScreen extends Screen {
             }
             List<String[]> steps = new ArrayList<>();
             for (Row r : list) if (r instanceof SliderRow sr && sr.s.stepKeys != null) steps.add(sr.s.stepKeys);
+            for (Row r : list) if (r instanceof CheckRow cr) steps.add(cr.words());
             for (Row r : list) if (r instanceof SliderRow sr && sr.s.stepKeys != null) sr.stepGroup = steps;
+            for (Row r : list) if (r instanceof CheckRow cr) cr.stepGroup = steps;
             tabs.add(list);
         }
         tab = Math.min(SHOWN_TAB.getOrDefault(spec.modId, 0), tabs.size() - 1);
@@ -126,6 +128,7 @@ public final class ConfigScreen extends Screen {
                     case SLIDER -> new SliderRow(r.key(), cast(r.options()), cast(r.get()), cast(r.set()));
                     case CHOICE -> new ChoiceRow<>(r.key(), cast(r.options()), cast(r.get()), cast(r.set()));
                     case ACTION -> new ActionRow(r.key(), (String) r.options(), cast(r.set()));
+                    case CHECKS -> new CheckRow(r.key(), cast(r.options()));
                 };
                 row.value = r.value();
                 // The row's own picture, else its tab's; none (only the description) for NONE or without either.
@@ -283,8 +286,10 @@ public final class ConfigScreen extends Screen {
             Draw.rect(g, x, y + 2, x + 2, y + Grid.ROW - 2, Theme.GOLD);
             DrawText.text(g, DrawText.fit(label.getString(), (int) (w - 2 - 3 * Grid.GAP - 6)), x + 2 + Grid.GAP, DrawText.textY(y, Grid.ROW), Theme.CREAM, false);
             float ax = x + w - Grid.GAP - 3, ay = y + Grid.ROW / 2f;
-            if (open()) Draw.triangle(g, ax - 3, ay - 1.5f, ax + 3, ay - 1.5f, ax, ay + 2f, Theme.CREAM);
-            else Draw.triangle(g, ax - 1.5f, ay - 3, ax - 1.5f, ay + 3, ax + 2f, ay, Theme.CREAM);
+            // White, gold under the pointer and while open (user request 13.11.2026, as a switch row's list arrow).
+            int c = hover || open() ? Theme.GOLD : Theme.WHITE;
+            if (open()) Draw.triangle(g, ax - 3, ay - 1.5f, ax + 3, ay - 1.5f, ax, ay + 2f, c);
+            else Draw.triangle(g, ax - 1.5f, ay - 3, ax - 1.5f, ay + 3, ax + 2f, ay, c);
         }
 
         @Override
@@ -332,7 +337,10 @@ public final class ConfigScreen extends Screen {
             boolean on = get.get();
             float ax = ax(x, w), ay = y + Grid.ROW / 2f;
             if (on && Draw.inRect(mx, my, ax - 6, y, 12, Grid.ROW)) Cursors.want(Cursors.Shape.HAND);
-            int c = on ? Theme.GOLD : Theme.PANEL_LINE;
+            // White, gold under the pointer and while its list is open (user request 13.11.2026, as the scroll arrows
+            // and the action link); grey while the switch is off.
+            boolean hover = on && Draw.inRect(mx, my, ax - 6, y, 12, Grid.ROW);
+            int c = !on ? Theme.PANEL_LINE : hover || openRow == this ? Theme.GOLD : Theme.WHITE;
             if (openRow == this) Draw.triangle(g, ax - 3, ay - 1.5f, ax + 3, ay - 1.5f, ax, ay + 2f, c);
             else Draw.triangle(g, ax - 1.5f, ay - 3, ax - 1.5f, ay + 3, ax + 2f, ay, c);
         }
@@ -583,6 +591,125 @@ public final class ConfigScreen extends Screen {
         String valueText() {
             return text(get.get());
         }
+    }
+
+    /** The box pointed at in a row of check boxes, -1 for none (see {@link AacsScreen#pointedCheck}); set while drawing. */
+    private static int pointedBox = -1;
+
+    public static int pointedCheck() {
+        return pointedBox;
+    }
+
+    /** The name over the box pointed at, drawn after the list (it may stand over the row above), and where. */
+    private Component boxTip;
+    private float boxTipX, boxTipY;
+
+    /** A check box's side, GUI units. */
+    private static final float BOX = 10;
+
+    /**
+     * Check boxes where a slider's steps would stand ({@link AacsScreen.Tab#checks}, user decision 13.11.2026: Teyvat
+     * Cartographia's pins and paths), so the rows of a tab line up; the value in words right of them; the box's name
+     * over it under the pointer.
+     */
+    private final class CheckRow extends Row {
+        final AacsScreen.Checks c;
+        float valueW = VALUE_W;
+        List<String[]> stepGroup = List.of();
+
+        CheckRow(String key, AacsScreen.Checks c) {
+            super(Component.translatable(key), Component.translatable(key + ".tooltip"));
+            this.c = c;
+        }
+
+        /**
+         * The words the value column is made wide enough for: all, none, some. A box's own name shows only when it
+         * fits there (the long ones would shorten every track of the tab).
+         */
+        String[] words() {
+            return new String[] {c.allKey(), c.noneKey(), c.someKey()};
+        }
+
+        float boxX(float x, float w, int i) {
+            float tx0 = x + w / 2, tw0 = w / 2 - valueW - Grid.PAD, half = SliderRow.knobHalf();
+            int n = c.boxes().size();
+            return n == 1 ? tx0 + tw0 / 2 : tx0 + half + (tw0 - 2 * half) * i / (n - 1f);
+        }
+
+        int boxAt(double mx, double my, float x, float w) {
+            if (my < y || my >= y + Grid.ROW) return -1;
+            for (int i = 0; i < c.boxes().size(); i++) if (Math.abs(mx - boxX(x, w, i)) <= BOX / 2 + 2) return i;
+            return -1;
+        }
+
+        @Override
+        float controlLeft(float x, float w) {
+            return x + w / 2;
+        }
+
+        @Override
+        String valueText() {
+            int on = 0, last = -1;
+            for (int i = 0; i < c.boxes().size(); i++) {
+                if (c.boxes().get(i).get().get()) {
+                    on++;
+                    last = i;
+                }
+            }
+            String key = on == c.boxes().size() ? c.allKey() : on == 0 ? c.noneKey() : c.someKey();
+            if (on == 1 && on < c.boxes().size()) {
+                String one = Component.translatable(c.boxes().get(last).key()).getString();
+                if (DrawText.width(one) <= valueW) return one;
+            }
+            return Component.translatable(key).getString();
+        }
+
+        @Override
+        void render(GuiGraphicsExtractor g, float x, float w, int mx, int my) {
+            renderLabel(g, x, w);
+            int widest = 0;
+            for (String[] keys : stepGroup) for (String k : keys) widest = Math.max(widest, DrawText.width(Component.translatable(k)));
+            valueW = Math.max(VALUE_W, widest + Grid.GAP);
+            int at = boxAt(mx, my, x, w);
+            if (at >= 0) pointedBox = at;
+            float cy = y + Grid.ROW / 2f;
+            for (int i = 0; i < c.boxes().size(); i++) {
+                AacsScreen.Check b = c.boxes().get(i);
+                boolean active = b.active().getAsBoolean(), hover = at == i;
+                if (hover) {
+                    Cursors.want(active ? Cursors.Shape.HAND : Cursors.Shape.UNAVAILABLE);
+                    boxTip = Component.translatable(b.key());
+                    boxTipX = boxX(x, w, i);
+                    boxTipY = y;
+                }
+                float bx = Draw.snap(boxX(x, w, i) - BOX / 2), by = Draw.snap(cy - BOX / 2);
+                Ui.checkBox(g, bx, by, BOX, b.get().get(), active, hover);
+            }
+            DrawText.textRight(g, Component.literal(DrawText.fit(valueText(), (int) (valueW + Grid.GAP))), x + w, DrawText.textY(y, Grid.ROW), Theme.CREAM, false);
+        }
+
+        @Override
+        boolean click(double mx, double my, float x, float w) {
+            int i = boxAt(mx, my, x, w);
+            if (i < 0) return false;
+            AacsScreen.Check b = c.boxes().get(i);
+            if (b.active().getAsBoolean()) {
+                b.set().accept(!b.get().get());
+                changed();
+            }
+            return true;
+        }
+    }
+
+    /** The name of the box pointed at, over it (under it when the row is the list's first). */
+    private void renderBoxTip(GuiGraphicsExtractor g) {
+        if (boxTip == null) return;
+        float tw = DrawText.width(boxTip) + 2 * Grid.GAP, th = DrawText.LINE + 2 * Grid.GAP;
+        float tx = Draw.snap(Math.max(panelX, Math.min(panelX + panelW - tw, boxTipX - tw / 2)));
+        float ty = boxTipY - th - 1 >= listTop ? boxTipY - th - 1 : boxTipY + Grid.ROW + 1;
+        ty = Draw.snap(ty);
+        Ui.tooltipBox(g, tx, ty, tw, th);
+        DrawText.text(g, boxTip, tx + Grid.GAP, ty + Grid.GAP + 1, Theme.CREAM, false);
     }
 
     /** A choice button with arrows at both ends: a click on its left or right half steps back or forward. */
@@ -1071,6 +1198,8 @@ public final class ConfigScreen extends Screen {
         Backdrop.release();
         renderTabs(g, mx, my);
         float total = total();
+        pointedBox = -1;
+        boxTip = null;
         barArrows.update(scroller, WHEEL, System.nanoTime());
         scroll = scroller.update(maxScroll());
 
@@ -1106,6 +1235,7 @@ public final class ConfigScreen extends Screen {
             }
         }
         renderBar(g, total, mx, my);
+        renderBoxTip(g);
         followPointer(mx, my);
         if (card) renderCard(g, mx, my, pt);
 
