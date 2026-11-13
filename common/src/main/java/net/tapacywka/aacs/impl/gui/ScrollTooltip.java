@@ -25,6 +25,7 @@ final class ScrollTooltip {
     private static final float BAR_W = 3;
 
     private final SmoothScroll scroller = new SmoothScroll();
+    private final ScrollArrows arrows = new ScrollArrows();
     private Object owner;
     private Component title, body;
     private List<FormattedCharSequence> lines;
@@ -44,6 +45,7 @@ final class ScrollTooltip {
         this.body = body;
         scroller.jump(0);
         draggingBar = false;
+        arrows.release();
         int textW = Math.min(MAX_W, screenW - 2 * Grid.MARGIN) - 2 * Grid.PAD - 2 * Grid.GAP - (int) BAR_W;
         lines = DrawText.font().split(body, textW);
         w = 0;
@@ -64,6 +66,7 @@ final class ScrollTooltip {
     void hide() {
         owner = null;
         draggingBar = false;
+        arrows.release();
     }
 
     boolean shown() {
@@ -88,22 +91,39 @@ final class ScrollTooltip {
         return x + w - Grid.PAD - BAR_W;
     }
 
+    /** The track between the bar's arrows. */
+    private float trackTop() {
+        return bodyTop + ScrollArrows.ROOM;
+    }
+
+    private float trackH() {
+        return Math.max(1, bodyBottom - bodyTop - 2 * ScrollArrows.ROOM);
+    }
+
     private float thumbH() {
-        float view = bodyBottom - bodyTop;
-        return Math.max(Grid.ROW / 2f, view * view / full);
+        float track = trackH();
+        return Math.min(track, Math.max(Grid.ROW / 2f, track * (bodyBottom - bodyTop) / full));
     }
 
     private float thumbY() {
-        float view = bodyBottom - bodyTop;
-        return bodyTop + (view - thumbH()) * scroller.fraction();
+        return trackTop() + (trackH() - thumbH()) * scroller.fraction();
     }
 
     private boolean barHit(double mx, double my) {
-        return scrolls() && my >= bodyTop && my < bodyBottom && mx >= barX() - Grid.GAP && mx < barX() + BAR_W + Grid.GAP;
+        return scrolls() && my >= trackTop() && my < trackTop() + trackH() && mx >= barX() - Grid.GAP && mx < barX() + BAR_W + Grid.GAP;
+    }
+
+    private int arrowAt(double mx, double my) {
+        return scrolls() ? ScrollArrows.at(mx, my, barX() + BAR_W / 2f, bodyTop, bodyBottom) : 0;
+    }
+
+    private static float line() {
+        return DrawText.LINE + 2;
     }
 
     void render(GuiGraphics g, int mx, int my) {
         if (owner == null) return;
+        arrows.update(scroller, line(), System.nanoTime());
         float scroll = scroller.update(maxScroll());
         Ui.tooltipBox(g, x, y, w, h);
         DrawText.text(g, DrawText.fit(title.getString(), (int) (w - 2 * Grid.PAD)), x + Grid.PAD, y + Grid.PAD, Theme.GOLD, false);
@@ -129,26 +149,30 @@ final class ScrollTooltip {
         if (hover) Cursors.want(Cursors.Shape.RESIZE_V);
         int thumb = hover || draggingBar ? Theme.GOLD : Theme.SCROLL_THUMB;
         float bx = barX(), th = thumbH(), tyb = thumbY();
+        float tt = trackTop(), tv = trackH();
         if (Theme.Style.squareUi) {
-            Draw.rect(g, bx, bodyTop, bx + BAR_W, bodyBottom, Theme.SCROLL_TRACK);
+            Draw.rect(g, bx, tt, bx + BAR_W, tt + tv, Theme.SCROLL_TRACK);
             Draw.rect(g, bx, tyb, bx + BAR_W, tyb + th, thumb);
         } else {
-            Draw.roundRect(g, bx, bodyTop, BAR_W, bodyBottom - bodyTop, BAR_W / 2f, Theme.SCROLL_TRACK);
+            Draw.roundRect(g, bx, tt, BAR_W, tv, BAR_W / 2f, Theme.SCROLL_TRACK);
             Draw.roundRect(g, bx, tyb, BAR_W, th, BAR_W / 2f, thumb);
         }
+        Ui.scrollArrows(g, bx + BAR_W / 2f, bodyTop, bodyBottom, scroller, arrows, mx, my);
     }
 
     /** The wheel over a scrolling description: a line's distance per notch. */
     boolean scroll(double mx, double my, double amount) {
         if (!scrolls() || !contains(mx, my)) return false;
-        scroller.wheel(amount, (DrawText.LINE + 2) * 3);
+        scroller.wheel(amount, line() * 3);
         return true;
     }
 
     /** A click on a scrolling description: on the bar it takes the thumb; anywhere on it, nothing under it is clicked. */
     boolean click(double mx, double my) {
         if (!scrolls() || !contains(mx, my)) return false;
-        if (barHit(mx, my)) {
+        int arrow = arrowAt(mx, my);
+        if (arrow != 0) arrows.press(arrow, scroller, line(), System.nanoTime());
+        else if (barHit(mx, my)) {
             float th = thumbH(), ty = thumbY();
             barGrab = my >= ty && my < ty + th ? (float) my - ty : th / 2f;
             draggingBar = true;
@@ -159,13 +183,13 @@ final class ScrollTooltip {
 
     boolean drag(double my) {
         if (!draggingBar) return false;
-        float view = bodyBottom - bodyTop;
-        scroller.toFraction((float) ((my - barGrab - bodyTop) / (view - thumbH())));
+        scroller.toFraction((float) ((my - barGrab - trackTop()) / Math.max(1, trackH() - thumbH())));
         return true;
     }
 
     void release() {
         draggingBar = false;
+        arrows.release();
     }
 
     boolean dragging() {

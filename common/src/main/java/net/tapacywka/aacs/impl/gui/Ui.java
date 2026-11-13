@@ -88,6 +88,28 @@ public final class Ui {
         return Draw.inRect(mx, my, x, y, w, Grid.ACTION_H);
     }
 
+    // ------------------------------------------------------------------ scroll bar arrows
+
+    /**
+     * The arrows of a scroll bar whose middle is {@code cx}, in the room {@link ScrollArrows#ROOM} at both ends of
+     * {@code top} to {@code bottom}: cream, gold pointed at or held, dim where the list cannot go on.
+     */
+    public static void scrollArrows(GuiGraphics g, float cx, float top, float bottom, SmoothScroll s, ScrollArrows a,
+                                    int mx, int my) {
+        scrollArrow(g, -1, cx, top, bottom, s, a, mx, my);
+        scrollArrow(g, 1, cx, top, bottom, s, a, mx, my);
+    }
+
+    private static void scrollArrow(GuiGraphics g, int dir, float cx, float top, float bottom, SmoothScroll s, ScrollArrows a,
+                                    int mx, int my) {
+        boolean can = ScrollArrows.can(dir, s), hover = ScrollArrows.at(mx, my, cx, top, bottom) == dir;
+        if (hover) Cursors.want(can ? Cursors.Shape.HAND : Cursors.Shape.UNAVAILABLE);
+        int c = !can ? (Theme.SCROLL_THUMB & 0xFFFFFF) | 0x4D000000 : hover || a.held() == dir ? Theme.GOLD : Theme.SCROLL_THUMB;
+        float cy = ScrollArrows.middle(dir, top, bottom), hw = ScrollArrows.HALF_W, hh = ScrollArrows.TRI_H / 2f;
+        if (dir < 0) Draw.triangle(g, cx, cy - hh, cx + hw, cy + hh, cx - hw, cy + hh, c);
+        else Draw.triangle(g, cx - hw, cy - hh, cx + hw, cy - hh, cx, cy + hh, c);
+    }
+
     /** How much darker an inactive control is. */
     public static final float INACTIVE = 0.4f;
 

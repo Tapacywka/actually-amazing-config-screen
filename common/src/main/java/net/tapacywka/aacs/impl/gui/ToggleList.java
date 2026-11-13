@@ -34,6 +34,7 @@ final class ToggleList {
     private final List<Entry> shown = new ArrayList<>();
     private String filter = "";
     private final SmoothScroll scroller = new SmoothScroll();
+    private final ScrollArrows arrows = new ScrollArrows();
     /** A switch changed since opening: {@link #onClosed} runs once the list closes. */
     private boolean changed;
     private boolean dragging;
@@ -97,7 +98,9 @@ final class ToggleList {
         if (!field.focused()) {
             DrawText.textRight(g, text("count", on, all.size()), x + w - 2 * Grid.GAP, DrawText.textY(fy, Grid.CHIP_H), Theme.TEXT_MUTED, false);
         }
-        float top = listTop(), view = viewH(), s = scroller.update(shown.size() * ITEM_H - view);
+        float top = listTop(), view = viewH();
+        arrows.update(scroller, ITEM_H, System.nanoTime());
+        float s = scroller.update(shown.size() * ITEM_H - view);
         if (shown.isEmpty()) {
             DrawText.text(g, text("none"), x + 2 * Grid.GAP, DrawText.textY(top, ITEM_H), Theme.TEXT_MUTED, false);
         }
@@ -126,13 +129,15 @@ final class ToggleList {
             boolean hover = barHit(mx, my);
             if (hover) Cursors.want(Cursors.Shape.RESIZE_V);
             int thumb = hover || dragging ? Theme.GOLD : Theme.SCROLL_THUMB;
+            float tt = trackTop(), tv = trackH();
             if (Theme.Style.squareUi) {
-                Draw.rect(g, bx, top, bx + BAR_W, top + view, Theme.SCROLL_TRACK);
+                Draw.rect(g, bx, tt, bx + BAR_W, tt + tv, Theme.SCROLL_TRACK);
                 Draw.rect(g, bx, ty, bx + BAR_W, ty + th, thumb);
             } else {
-                Draw.roundRect(g, bx, top, BAR_W, view, BAR_W / 2f, Theme.SCROLL_TRACK);
+                Draw.roundRect(g, bx, tt, BAR_W, tv, BAR_W / 2f, Theme.SCROLL_TRACK);
                 Draw.roundRect(g, bx, ty, BAR_W, th, BAR_W / 2f, thumb);
             }
+            Ui.scrollArrows(g, bx + BAR_W / 2f, top, top + view, scroller, arrows, mx, my);
         }
     }
 
@@ -152,27 +157,37 @@ final class ToggleList {
         return my >= listTop() && my < listTop() + viewH();
     }
 
+    /** The track between the bar's arrows. */
+    private float trackTop() {
+        return listTop() + ScrollArrows.ROOM;
+    }
+
+    private float trackH() {
+        return Math.max(1, viewH() - 2 * ScrollArrows.ROOM);
+    }
+
     private float thumbH() {
-        float track = viewH();
+        float track = trackH();
         return Math.max(Math.min(Grid.ROW, track / 3), track * track / Math.max(1, shown.size() * ITEM_H));
     }
 
     private float thumbY() {
-        return listTop() + (viewH() - thumbH()) * scroller.fraction();
+        return trackTop() + (trackH() - thumbH()) * scroller.fraction();
     }
 
     private boolean barHit(double mx, double my) {
-        return scroller.max() > 0 && inList(my) && mx >= barX() - Grid.GAP && mx < barX() + BAR_W + Grid.GAP;
+        return scroller.max() > 0 && my >= trackTop() && my < trackTop() + trackH() && mx >= barX() - Grid.GAP && mx < barX() + BAR_W + Grid.GAP;
     }
 
     boolean drag(double my) {
         if (!dragging) return false;
-        scroller.toFraction((float) ((my - grab - listTop()) / Math.max(1, viewH() - thumbH())));
+        scroller.toFraction((float) ((my - grab - trackTop()) / Math.max(1, trackH() - thumbH())));
         return true;
     }
 
     void release() {
         dragging = false;
+        arrows.release();
     }
 
     private float toggleX() {
@@ -190,6 +205,11 @@ final class ToggleList {
             return false;
         }
         if (field.click(mx, my, button)) return true;
+        int arrow = scroller.max() > 0 ? ScrollArrows.at(mx, my, barX() + BAR_W / 2f, listTop(), listTop() + viewH()) : 0;
+        if (arrow != 0) {
+            arrows.press(arrow, scroller, ITEM_H, System.nanoTime());
+            return true;
+        }
         if (barHit(mx, my)) {
             float ty = thumbY(), th = thumbH();
             grab = my >= ty && my < ty + th ? (float) (my - ty) : th / 2f;

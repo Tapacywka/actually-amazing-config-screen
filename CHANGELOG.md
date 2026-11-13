@@ -9,6 +9,10 @@ on Fabric.
 
 ## [Unreleased]
 
+### Added
+- Arrows at both ends of every scroll bar (the settings list, a switch row's list, long descriptions): a click scrolls
+  a row, held it goes on scrolling; dim where the list cannot go further.
+
 ## [1.3.2] - 2026-11-12
 
 ### Fixed

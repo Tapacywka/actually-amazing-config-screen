@@ -57,6 +57,7 @@ public final class ConfigScreen extends Screen {
     private final ScrollTooltip tip = new ScrollTooltip();
     private float scroll;
     private boolean draggingBar;
+    private final ScrollArrows barArrows = new ScrollArrows();
     private Row draggingRow;
     private float barGrab;
     private float panelX, panelY, panelW, panelH, listTop, listBottom;
@@ -709,23 +710,34 @@ public final class ConfigScreen extends Screen {
         return contentX() + contentW() + Grid.PAD - BAR_W / 2f;
     }
 
+    /** The track between the bar's arrows. */
+    private float trackTop() {
+        return listTop + ScrollArrows.ROOM;
+    }
+
+    private float trackH() {
+        return Math.max(1, listBottom - listTop - 2 * ScrollArrows.ROOM);
+    }
+
     private float thumbH(float total) {
-        float view = listBottom - listTop;
-        return Math.max(Grid.ROW, view * view / total);
+        float track = trackH();
+        return Math.min(track, Math.max(Grid.ROW, track * (listBottom - listTop) / total));
     }
 
     private float thumbY(float total) {
-        float view = listBottom - listTop, th = thumbH(total);
-        return listTop + (view - th) * Math.min(1, scroll / Math.max(1, maxScroll()));
+        return trackTop() + (trackH() - thumbH(total)) * Math.min(1, scroll / Math.max(1, maxScroll()));
     }
 
     private boolean barHit(double mx, double my) {
-        return total() > listBottom - listTop && my >= listTop && my < listBottom && mx >= barX() - Grid.GAP && mx < barX() + BAR_W + Grid.GAP;
+        return total() > listBottom - listTop && my >= trackTop() && my < trackTop() + trackH() && mx >= barX() - Grid.GAP && mx < barX() + BAR_W + Grid.GAP;
+    }
+
+    private int barArrowAt(double mx, double my) {
+        return total() > listBottom - listTop ? ScrollArrows.at(mx, my, barX() + BAR_W / 2f, listTop, listBottom) : 0;
     }
 
     private void dragBar(double my) {
-        float total = total(), view = listBottom - listTop, th = thumbH(total);
-        scroller.toFraction((float) ((my - barGrab - listTop) / (view - th)));
+        scroller.toFraction((float) ((my - barGrab - trackTop()) / Math.max(1, trackH() - thumbH(total()))));
     }
 
     private void renderBar(GuiGraphics g, float total, int mx, int my) {
@@ -735,13 +747,15 @@ public final class ConfigScreen extends Screen {
         if (hover) Cursors.want(Cursors.Shape.RESIZE_V);
         float bx = barX(), th = thumbH(total), ty = thumbY(total);
         int thumb = hover || draggingBar ? Theme.GOLD : Theme.SCROLL_THUMB;
+        float tt = trackTop(), tv = trackH();
         if (Theme.Style.squareUi) {
-            Draw.rect(g, bx, listTop, bx + BAR_W, listBottom, Theme.SCROLL_TRACK);
+            Draw.rect(g, bx, tt, bx + BAR_W, tt + tv, Theme.SCROLL_TRACK);
             Draw.rect(g, bx, ty, bx + BAR_W, ty + th, thumb);
         } else {
-            Draw.roundRect(g, bx, listTop, BAR_W, view, BAR_W / 2f, Theme.SCROLL_TRACK);
+            Draw.roundRect(g, bx, tt, BAR_W, tv, BAR_W / 2f, Theme.SCROLL_TRACK);
             Draw.roundRect(g, bx, ty, BAR_W, th, BAR_W / 2f, thumb);
         }
+        Ui.scrollArrows(g, bx + BAR_W / 2f, listTop, listBottom, scroller, barArrows, mx, my);
     }
 
     // ------------------------------------------------------------------ tabs: widths follow their titles; a strip that
@@ -1051,6 +1065,7 @@ public final class ConfigScreen extends Screen {
         Backdrop.release();
         renderTabs(g, mx, my);
         float total = total();
+        barArrows.update(scroller, WHEEL, System.nanoTime());
         scroll = scroller.update(maxScroll());
 
         EdgeFade.capture(g);
@@ -1157,6 +1172,12 @@ public final class ConfigScreen extends Screen {
             onClose();
             return true;
         }
+        int arrow = barArrowAt(mx, my);
+        if (arrow != 0) {
+            tip.hide(); // the rows move under it
+            barArrows.press(arrow, scroller, WHEEL, System.nanoTime());
+            return true;
+        }
         if (barHit(mx, my)) {
             float th = thumbH(total()), ty = thumbY(total());
             barGrab = my >= ty && my < ty + th ? (float) my - ty : th / 2f; // on the track: the thumb jumps under the pointer
@@ -1197,6 +1218,7 @@ public final class ConfigScreen extends Screen {
         if (draggingRow != null) draggingRow.release();
         draggingRow = null;
         draggingBar = false;
+        barArrows.release();
         tip.release();
         if (openList != null) openList.release();
         return super.mouseReleased(mx, my, button);
