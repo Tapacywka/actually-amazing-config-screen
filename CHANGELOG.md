@@ -10,8 +10,13 @@ on Fabric.
 ## [Unreleased]
 
 ### Added
+- A row of check boxes for a setting of several parts (a mod shows where something is drawn, each place its own box),
+  each box's name over it under the pointer.
 - Arrows at both ends of every scroll bar (the settings list, a switch row's list, long descriptions): a click scrolls
   a row, held it goes on scrolling; dim where the list cannot go further.
+
+### Changed
+- The arrow of a switch row's list and of a sub-heading is white, gold under the pointer and while open.
 
 ## [1.3.2] - 2026-11-12
 

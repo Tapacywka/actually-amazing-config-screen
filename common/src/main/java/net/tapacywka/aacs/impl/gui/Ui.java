@@ -110,6 +110,23 @@ public final class Ui {
         else Draw.triangle(g, cx - hw, cy - hh, cx + hw, cy - hh, cx, cy + hh, c);
     }
 
+    /**
+     * A check box of {@code s} units (a row of {@code AacsScreen.Tab#checks}): an outline while not ticked, gold with a
+     * dark tick while ticked; white under the pointer, darker while it cannot be clicked.
+     */
+    public static void checkBox(GuiGraphics g, float x, float y, float s, boolean on, boolean active, boolean hover) {
+        int edge = !active ? inactive(Theme.CREAM) : hover ? Theme.WHITE : Theme.CREAM;
+        int fill = active ? Theme.GOLD : inactive(Theme.GOLD);
+        if (Theme.Style.squareUi) {
+            if (on) Draw.rect(g, x, y, x + s, y + s, fill);
+            if (!on || hover && active) Draw.frame(g, x, y, s, s, 1, edge);
+        } else {
+            if (on) Draw.roundRect(g, x, y, s, s, 2, fill);
+            if (!on || hover && active) Draw.roundRectOutline(g, x, y, s, s, 2, 1, edge);
+        }
+        if (on) Draw.icon(g, Icon.CHECK, x + s / 2f, y + s / 2f, s - 2, Theme.TOGGLE_TRACK_OFF);
+    }
+
     /** How much darker an inactive control is. */
     public static final float INACTIVE = 0.4f;
 

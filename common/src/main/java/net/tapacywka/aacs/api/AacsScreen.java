@@ -398,6 +398,16 @@ public final class AacsScreen {
             return add(Row.Kind.SLIDER, key, () -> (double) get.getAsInt(), (Double d) -> set.accept((int) Math.round(d)), null, s);
         }
 
+        /**
+         * Check boxes where a slider's steps would stand (since API 5; Teyvat Cartographia's pins: the world map, the
+         * minimap, the marker, the beam), each its own part of one setting; the row's value is {@code allKey} with
+         * every box ticked, {@code noneKey} with none, the box's own name with one, else {@code someKey}. No reset icon,
+         * as no single value stands behind it.
+         */
+        public Tab checks(String key, String allKey, String noneKey, String someKey, List<Check> boxes) {
+            return add(Row.Kind.CHECKS, key, null, null, null, new Checks(List.copyOf(boxes), allKey, noneKey, someKey));
+        }
+
         // ---------------------------------------------------------------- choices with arrows
 
         /** The constants of an enum by name: {@code <modid>.config.value.<constant in lower case>}. */
@@ -466,6 +476,28 @@ public final class AacsScreen {
         default boolean caption(String row) {
             return true;
         }
+    }
+
+    /**
+     * One box of a {@link Tab#checks} row: {@code key} its name (shown over the box under the pointer and as the row's
+     * value when it is the only one ticked), whether it is ticked and how it is set, and whether it can be clicked now
+     * (dim and still while false: a part that needs another one ticked).
+     */
+    public record Check(String key, Supplier<Boolean> get, Consumer<Boolean> set, BooleanSupplier active) {
+        public Check(String key, Supplier<Boolean> get, Consumer<Boolean> set) {
+            this(key, get, set, () -> true);
+        }
+    }
+
+    /** What a {@link Tab#checks} row shows: its boxes, and the words for all of them ticked, none, and some. */
+    public record Checks(List<Check> boxes, String allKey, String noneKey, String someKey) {}
+
+    /**
+     * The box under the pointer in the row of the settings screen the card shows now, 0 first, -1 for none (since API
+     * 5): a picture of several parts can light the part of that box.
+     */
+    public static int pointedCheck() {
+        return net.tapacywka.aacs.impl.gui.ConfigScreen.pointedCheck();
     }
 
     /** One entry of a {@link Tab#toggleList}: its id (as kept in the list of those off), name and colour (0: none). */
@@ -570,6 +602,6 @@ public final class AacsScreen {
      */
     public record Row(Kind kind, String key, String subSection, Supplier<?> get, Consumer<?> set, Component label,
                       Value<?> value, Object options, Preview preview, Runnable then) {
-        public enum Kind { SECTION, SUB_SECTION, TOGGLE, TOGGLE_LIST, SLIDER, CHOICE, ACTION }
+        public enum Kind { SECTION, SUB_SECTION, TOGGLE, TOGGLE_LIST, SLIDER, CHOICE, ACTION, CHECKS }
     }
 }
