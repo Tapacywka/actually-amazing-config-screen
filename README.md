@@ -49,7 +49,7 @@
 | 1.21.1, 26.1.2, 26.2, 26.3 | [Fabric](https://github.com/FabricMC/fabric-loader) | nothing (no Fabric API) |
 | 1.21.1, 26.1.2, 26.2, 26.3 | [NeoForge](https://github.com/neoforged/NeoForge) | nothing |
 
-Players usually install nothing: the library comes inside the mods that use it, such as [Teyvat Cartographia](https://github.com/Tapacywka/teyvat-cartographia). If a mod asks for it, put the file for your game and loader into `mods/`. It is client-side only.
+Install it with the mods that ask for it, such as [Teyvat Cartographia](https://github.com/Tapacywka/teyvat-cartographia): put the file for your game and loader into `mods/` (Prism Launcher, the Modrinth App and the CurseForge App offer it with such a mod by themselves). A mod may also bring it inside its own file; then you install nothing. It is client-side only.
 
 <h2 id="connector">🔌 Sinytra Connector</h2>
 
@@ -69,6 +69,8 @@ dependencies {
     jarJar(implementation('maven.modrinth:actually-amazing-config-screen:1.3.2+mc1.21.1-neoforge'))
 }
 ```
+
+Or leave out `include` and `jarJar` and ask for the mod `aacs` as a required dependency, as Teyvat Cartographia does since 1.4.0: your players install it beside your mod and get each newer version of it at once.
 
 Describe the settings, then the screen:
 
@@ -95,7 +97,7 @@ Names and descriptions come from your lang files (`mymod.config.<key>` and `mymo
 <details>
 <summary><b>Why is it in my mod list if I never installed it?</b></summary>
 
-A mod you play brought it inside its own file. It shows as a library, and that mod's settings button opens its screen.
+A mod you play asks for it, or brought it inside its own file. That mod's settings button opens its screen.
 </details>
 
 <details>
