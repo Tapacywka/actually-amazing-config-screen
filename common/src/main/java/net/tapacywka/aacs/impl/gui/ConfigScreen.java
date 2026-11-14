@@ -516,8 +516,12 @@ public final class ConfigScreen extends Screen {
             return w / 2 - valueW - Grid.PAD;
         }
 
+        /**
+         * How far in from the track's ends the knob's middle stops: the same in both styles (user request 14.11.2026:
+         * the Rounded style's 7 left its sliders and the check boxes set by them a few pixels short of the others).
+         */
         static float knobHalf() {
-            return Theme.Style.squareUi ? 4 : 7;
+            return 4;
         }
 
         @Override
