@@ -100,6 +100,7 @@ public final class ConfigScreen extends Screen {
             for (Row r : list) if (r instanceof CheckRow cr) cr.stepGroup = steps;
             tabs.add(list);
         }
+        for (List<Row> list : tabs) for (Row r : list) if (r instanceof CheckRow cr) checkColumns = Math.max(checkColumns, cr.c.boxes().size());
         tab = Math.min(SHOWN_TAB.getOrDefault(spec.modId, 0), tabs.size() - 1);
         rows = tabs.get(tab);
     }
@@ -606,6 +607,8 @@ public final class ConfigScreen extends Screen {
 
     /** A check box's side, GUI units. */
     private static final float BOX = 10;
+    /** The most boxes of any check row of the screen: every row's boxes stand in those columns, from the left. */
+    private int checkColumns = 1;
 
     /**
      * Check boxes where a slider's steps would stand ({@link AacsScreen.Tab#checks}, user decision 13.11.2026: Teyvat
@@ -632,7 +635,9 @@ public final class ConfigScreen extends Screen {
 
         float boxX(float x, float w, int i) {
             float tx0 = x + w / 2, tw0 = w / 2 - valueW - Grid.PAD, half = SliderRow.knobHalf();
-            int n = c.boxes().size();
+            // One pitch for every check row of the screen (user decision 14.11.2026, variant A): a row with fewer boxes
+            // keeps the first columns, so two boxes no longer stand at the track's two ends.
+            int n = checkColumns;
             return n == 1 ? tx0 + tw0 / 2 : tx0 + half + (tw0 - 2 * half) * i / (n - 1f);
         }
 

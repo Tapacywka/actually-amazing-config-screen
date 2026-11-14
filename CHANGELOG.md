@@ -9,6 +9,10 @@ on Fabric.
 
 ## [Unreleased]
 
+### Changed
+- In a row with fewer check boxes than the others, the boxes keep the same columns from the left instead of spreading
+  over the whole row.
+
 ## [1.4.0] - 2026-11-14
 
 ### Added
