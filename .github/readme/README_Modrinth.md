@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Tapacywka/actually-amazing-config-screen/main/.github/images/settings-card.jpg" alt="A settings screen with tabs and the card explaining the setting under the pointer" width="100%">
+  <img src="https://raw.githubusercontent.com/Tapacywka/actually-amazing-config-screen/main/.github/images/settings-checkboxes.jpg" alt="A settings screen with tabs, rows of check boxes and the card showing the setting under the pointer" width="100%">
 </p>
 
 <h2 id="features">✨ Features</h2>
@@ -34,13 +34,6 @@
 - **Your look**: rectangular or rounded, your colours and background, kept at a readable size on any screen.
 - **Room for others**: a tab where other mods can add their own settings.
 - **Settings button** in Mod Menu and in NeoForge's mod list, set up for you.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Tapacywka/actually-amazing-config-screen/main/.github/images/rounded.jpg" alt="The rounded style" width="49%">
-  <img src="https://raw.githubusercontent.com/Tapacywka/actually-amazing-config-screen/main/.github/images/list.jpg" alt="A switch with a searchable list" width="49%">
-  <img src="https://raw.githubusercontent.com/Tapacywka/actually-amazing-config-screen/main/.github/images/compatibility.jpg" alt="A tab where other mods add their own settings" width="49%">
-  <img src="https://raw.githubusercontent.com/Tapacywka/actually-amazing-config-screen/main/.github/images/tooltip.jpg" alt="In a narrow window, the description as a tooltip" width="49%">
-</p>
 
 <h2 id="installation">📥 Installation</h2>
 
