@@ -9,6 +9,8 @@ on Fabric.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-14
+
 ### Added
 - A row of check boxes for a setting of several parts (a mod shows where something is drawn, each place its own box),
   each box's name over it under the pointer.
@@ -99,7 +101,8 @@ A beta for every game: Minecraft 1.21.1, 26.1.2, 26.2 and 26.3, on Fabric and Ne
 - Sub-sections from other mods: a mod opens a tab to them, and another mod adds its own sub-section there with its
   own settings, shown by name after the tab's own rows (optionally only while a condition holds).
 
-[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.3.2...HEAD
+[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.2.0...v1.3.0
