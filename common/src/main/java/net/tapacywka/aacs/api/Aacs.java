@@ -15,6 +15,7 @@ public final class Aacs {
      * {@code n} may check {@code API_VERSION >= n} before using what came with it. 3: rows with an
      * action ({@link AacsScreen.Tab#action}). 4: a choice with arrows among named options by number
      * ({@link AacsScreen.Tab#choice(String, String[], java.util.function.IntSupplier, java.util.function.IntConsumer)}). 5: check boxes in a row ({@link AacsScreen.Tab#checks}) and the box pointed at ({@link AacsScreen#pointedCheck}).
+     * 6: a picture is told when the settings screen goes ({@link AacsScreen.Preview#closed}).
      */
-    public static final int API_VERSION = 5;
+    public static final int API_VERSION = 6;
 }

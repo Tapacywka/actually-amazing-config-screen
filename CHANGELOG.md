@@ -9,6 +9,10 @@ on Fabric.
 
 ## [Unreleased]
 
+### Added
+- For mods (API 6): a picture of the settings card is told when the settings screen goes, so it can free what it made
+  for itself; a mod built for it still runs with an older library.
+
 ## [1.5.0] - 2026-11-17
 
 ### Changed
