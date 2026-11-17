@@ -9,6 +9,11 @@ on Fabric.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-17
+
+### Changed
+- Only the version number, which follows Teyvat Cartographia 1.5.0: nothing else changed.
+
 ## [1.4.1] - 2026-11-14
 
 ### Changed
@@ -111,7 +116,8 @@ A beta for every game: Minecraft 1.21.1, 26.1.2, 26.2 and 26.3, on Fabric and Ne
 - Sub-sections from other mods: a mod opens a tab to them, and another mod adds its own sub-section there with its
   own settings, shown by name after the tab's own rows (optionally only while a condition holds).
 
-[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.3.1...v1.3.2
