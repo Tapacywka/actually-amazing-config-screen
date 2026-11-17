@@ -476,6 +476,13 @@ public final class AacsScreen {
         default boolean caption(String row) {
             return true;
         }
+
+        /**
+         * The settings screen went (closed, or another screen opened over it), once per picture: free what the picture
+         * made for itself (textures, layers); it is drawn again if the screen comes back. Since API 6; a mod built
+         * against it still runs with an older library, which only never calls it.
+         */
+        default void closed() {}
     }
 
     /**

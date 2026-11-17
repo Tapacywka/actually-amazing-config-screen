@@ -1421,11 +1421,20 @@ public final class ConfigScreen extends Screen {
         return Math.max(1, h / 360);
     }
 
+    /** Tells each picture once that the screen went ({@link AacsScreen.Preview#closed}): a tab's picture serves many rows. */
+    public static void closePreviews(Iterable<AacsScreen.Preview> previews) {
+        Set<AacsScreen.Preview> told = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        for (AacsScreen.Preview p : previews) if (p != null && told.add(p)) p.closed();
+    }
+
     @Override
     public void removed() {
         closeList();
         Cursors.reset();
         EdgeFade.dispose();
+        List<AacsScreen.Preview> previews = new ArrayList<>();
+        for (List<Row> tab : tabs) for (Row r : tab) previews.add(r.preview);
+        closePreviews(previews);
         if (scaleCapped) {
             Minecraft mc = Minecraft.getInstance();
             mc.getWindow().setGuiScale(mc.getWindow().calculateScale(mc.options.guiScale().get(), mc.options.forceUnicodeFont().get()));
