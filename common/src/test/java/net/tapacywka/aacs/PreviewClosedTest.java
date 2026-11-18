@@ -1,6 +1,6 @@
 package net.tapacywka.aacs;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.tapacywka.aacs.api.AacsScreen;
 import net.tapacywka.aacs.impl.gui.ConfigScreen;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ class PreviewClosedTest {
         int closed;
 
         @Override
-        public void draw(GuiGraphics g, String row, float x, float y, float w, float h, float partialTick) {}
+        public void draw(GuiGraphicsExtractor g, String row, float x, float y, float w, float h, float partialTick) {}
 
         @Override
         public void closed() {
