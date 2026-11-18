@@ -9,9 +9,14 @@ on Fabric.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-18
+
 ### Added
 - For mods (API 6): a picture of the settings card is told when the settings screen goes, so it can free what it made
   for itself; a mod built for it still runs with an older library.
+
+### Changed
+- The version number follows Teyvat Cartographia 2.0.0.
 
 ## [1.5.0] - 2026-11-17
 
@@ -120,7 +125,8 @@ A beta for every game: Minecraft 1.21.1, 26.1.2, 26.2 and 26.3, on Fabric and Ne
 - Sub-sections from other mods: a mod opens a tab to them, and another mod adds its own sub-section there with its
   own settings, shown by name after the tab's own rows (optionally only while a condition holds).
 
-[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.5.0...v2.0.0
 [1.5.0]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/Tapacywka/actually-amazing-config-screen/compare/v1.3.2...v1.4.0
